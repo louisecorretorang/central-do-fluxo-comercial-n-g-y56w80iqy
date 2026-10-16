@@ -73,6 +73,9 @@ export default function Layout() {
   }
 
   const getPageTitle = () => {
+    if (location.pathname.startsWith('/oportunidades/')) {
+      return 'Ficha da Oportunidade'
+    }
     if (location.pathname.startsWith('/clientes/')) {
       return 'Ficha do Cliente'
     }

@@ -6,7 +6,10 @@ import {
   deleteContato,
   setContatoPrincipal,
 } from '@/services/clientes'
+import { getOportunidades } from '@/services/oportunidades'
 import { Cliente, ClienteContato } from '@/types/clientes'
+import { OportunidadeResumo } from '@/types/oportunidades'
+import { formatCurrencyBRL } from '@/components/NewOpportunityModal'
 import { formatCNPJ, formatCPF, formatDateBR, formatPhoneBR } from '@/lib/clientes-utils'
 import { useOpportunityModal } from '@/hooks/use-opportunity-modal'
 import { useToast } from '@/hooks/use-toast'
@@ -64,6 +67,7 @@ export default function ClienteDetalhes() {
   const { openModal: openOpportunityModal } = useOpportunityModal()
 
   const [cliente, setCliente] = useState<Cliente | null>(null)
+  const [oportunidades, setOportunidades] = useState<OportunidadeResumo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -85,11 +89,17 @@ export default function ClienteDetalhes() {
     setLoading(true)
     setError(null)
     try {
-      const res = await getClienteById(id)
+      const [res, oppsRes] = await Promise.all([
+        getClienteById(id),
+        getOportunidades({ clienteId: id }),
+      ])
       if (res.error || !res.data) {
         throw new Error(res.error?.message || 'Cliente não encontrado')
       }
       setCliente(res.data)
+      if (oppsRes.data) {
+        setOportunidades(oppsRes.data)
+      }
     } catch (err: any) {
       console.error('Erro ao buscar cliente:', err)
       setError('Não foi possível encontrar a ficha deste cliente.')
@@ -707,7 +717,7 @@ export default function ClienteDetalhes() {
                 Oportunidades deste cliente
               </CardTitle>
               <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-semibold">
-                0 abertas
+                {oportunidades.length} {oportunidades.length === 1 ? 'aberta' : 'abertas'}
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -725,28 +735,81 @@ export default function ClienteDetalhes() {
           </Button>
         </CardHeader>
 
-        <CardContent className="p-6">
-          <div className="text-center py-10 px-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-700 mx-auto mb-2">
-              <Briefcase className="w-6 h-6" />
+        <CardContent className="p-0 sm:p-0">
+          {oportunidades.length === 0 ? (
+            <div className="text-center py-10 px-4">
+              <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-700 mx-auto mb-2">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-[#0C2D48]">
+                Nenhuma oportunidade aberta no momento
+              </h4>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                Quando houver uma cotação, implantação ou renovação para este cliente, ela aparecerá
+                aqui no fluxo comercial.
+              </p>
+              <Button
+                onClick={handleOpenNovaOportunidade}
+                variant="outline"
+                size="sm"
+                className="mt-4 h-9 px-4 rounded-xl text-xs font-semibold text-teal-800 border-teal-200 hover:bg-teal-50 btn-press"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" />
+                Criar oportunidade agora
+              </Button>
             </div>
-            <h4 className="text-sm font-bold text-[#0C2D48]">
-              Nenhuma oportunidade aberta no momento
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Quando houver uma cotação, implantação ou renovação para este cliente, ela aparecerá
-              aqui no fluxo comercial.
-            </p>
-            <Button
-              onClick={handleOpenNovaOportunidade}
-              variant="outline"
-              size="sm"
-              className="mt-4 h-9 px-4 rounded-xl text-xs font-semibold text-teal-800 border-teal-200 hover:bg-teal-50 btn-press"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" />
-              Criar oportunidade agora
-            </Button>
-          </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {oportunidades.map((opp) => (
+                <div
+                  key={opp.id}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs uppercase px-2 py-0.5 rounded-md bg-teal-50 text-teal-900 border border-teal-200 font-bold">
+                        {opp.protocolo}
+                      </span>
+                      <span className="font-bold text-sm text-[#0C2D48]">
+                        {opp.produto_nome}
+                        {opp.seguradora_nome ? ` — ${opp.seguradora_nome}` : ''}
+                      </span>
+                      <Badge className="bg-slate-100 text-slate-700 border-none text-[10px]">
+                        {opp.situacao}
+                      </Badge>
+                      {opp.usou_fluxo_generico && (
+                        <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
+                          Fluxo padrão
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-500 mt-1.5">
+                      <span className="font-medium text-teal-800">
+                        Etapa: {opp.etapa_atual_nome || 'Inicial'}
+                      </span>
+                      <span>Resp: {opp.responsavel_comercial_nome}</span>
+                      <span className="font-semibold text-slate-700">
+                        {formatCurrencyBRL(opp.valor_estimado)}
+                      </span>
+                      <span>Previsto: {formatDateBR(opp.data_prevista_fechamento)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="h-9 px-3.5 rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      <Link to={`/oportunidades/${opp.id}`}>Ver oportunidade</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

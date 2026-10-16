@@ -15,6 +15,7 @@ import AdminRoute from './components/AdminRoute'
 // Páginas reais da Central do Fluxo Comercial
 import MinhaFila from './pages/MinhaFila'
 import Oportunidades from './pages/Oportunidades'
+import OportunidadeDetalhes from './pages/OportunidadeDetalhes'
 import Quadro from './pages/Quadro'
 import Clientes from './pages/Clientes'
 import ClienteDetalhes from './pages/ClienteDetalhes'
@@ -39,6 +40,7 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/minha-fila" element={<MinhaFila />} />
                 <Route path="/oportunidades" element={<Oportunidades />} />
+                <Route path="/oportunidades/:id" element={<OportunidadeDetalhes />} />
                 <Route path="/quadro" element={<Quadro />} />
                 <Route path="/clientes" element={<Clientes />} />
                 <Route path="/clientes/:id" element={<ClienteDetalhes />} />
