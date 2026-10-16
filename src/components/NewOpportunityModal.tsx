@@ -17,6 +17,7 @@ import { Briefcase, Calendar, DollarSign, User, AlertCircle, CheckCircle2 } from
 interface NewOpportunityModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialClient?: string
 }
 
 export const formatCurrencyBRL = (value: string): string => {
@@ -38,14 +39,27 @@ export const formatDateBR = (value: string): string => {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`
 }
 
-export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({ open, onOpenChange }) => {
+export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
+  open,
+  onOpenChange,
+  initialClient = '',
+}) => {
   const { toast } = useToast()
 
   const [title, setTitle] = useState('')
-  const [client, setClient] = useState('')
+  const [client, setClient] = useState(initialClient)
   const [estimatedValue, setEstimatedValue] = useState('')
   const [deadline, setDeadline] = useState('')
   const [notes, setNotes] = useState('')
+
+  // Sincroniza initialClient ao abrir o modal
+  React.useEffect(() => {
+    if (open) {
+      if (initialClient) {
+        setClient(initialClient)
+      }
+    }
+  }, [open, initialClient])
 
   const [errors, setErrors] = useState<{
     title?: string

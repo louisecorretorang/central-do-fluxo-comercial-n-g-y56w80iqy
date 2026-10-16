@@ -35,7 +35,7 @@ const NAV_ITEMS = [
 
 export default function Layout() {
   const { userDisplayName, signOut, perfil, isAdmin } = useAuth()
-  const { isOpen, openModal, closeModal, setIsOpen } = useOpportunityModal()
+  const { isOpen, prefilledClient, openModal, closeModal, setIsOpen } = useOpportunityModal()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
@@ -57,6 +57,9 @@ export default function Layout() {
   }
 
   const getPageTitle = () => {
+    if (location.pathname.startsWith('/clientes/')) {
+      return 'Ficha do Cliente'
+    }
     const item = NAV_ITEMS.find((n) => n.path === location.pathname)
     return item ? item.label : 'Central do Fluxo Comercial'
   }
@@ -93,7 +96,9 @@ export default function Layout() {
           </div>
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = location.pathname === item.path
+            const isActive =
+              location.pathname === item.path ||
+              (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
             return (
               <NavLink
                 key={item.path}
@@ -165,7 +170,9 @@ export default function Layout() {
           <nav className="p-3 space-y-1.5 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = location.pathname === item.path
+              const isActive =
+                location.pathname === item.path ||
+                (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
               return (
                 <NavLink
                   key={item.path}
@@ -234,7 +241,7 @@ export default function Layout() {
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Botão de destaque "Nova oportunidade" SEMPRE visível no topo (desktop) */}
             <Button
-              onClick={openModal}
+              onClick={() => openModal()}
               className="hidden md:inline-flex h-10 px-4 rounded-xl bg-[#00A896] hover:bg-[#008f80] text-white font-semibold shadow-xs items-center gap-2 btn-press"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -302,7 +309,7 @@ export default function Layout() {
          ======================================================== */}
       <button
         type="button"
-        onClick={openModal}
+        onClick={() => openModal()}
         className="md:hidden fixed bottom-5 right-5 z-40 h-14 px-5 rounded-full bg-[#00A896] hover:bg-[#008f80] text-white shadow-xl flex items-center gap-2 font-semibold text-sm active:scale-95 transition-transform"
         aria-label="Criar nova oportunidade"
       >
@@ -311,7 +318,7 @@ export default function Layout() {
       </button>
 
       {/* Modal global de criação de oportunidade */}
-      <NewOpportunityModal open={isOpen} onOpenChange={setIsOpen} />
+      <NewOpportunityModal open={isOpen} onOpenChange={setIsOpen} initialClient={prefilledClient} />
     </div>
   )
 }

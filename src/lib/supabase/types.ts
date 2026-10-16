@@ -9,16 +9,110 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      equipes: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      profile_equipes: {
+        Row: {
+          created_at: string
+          equipe_id: string
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          equipe_id: string
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          equipe_id?: string
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'profile_equipes_equipe_id_fkey'
+            columns: ['equipe_id']
+            isOneToOne: false
+            referencedRelation: 'equipes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'profile_equipes_profile_id_fkey'
+            columns: ['profile_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          funcao: Database['public']['Enums']['user_funcao']
+          id: string
+          nome: string
+          perfil: Database['public']['Enums']['user_perfil']
+          situacao: Database['public']['Enums']['user_situacao']
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          funcao?: Database['public']['Enums']['user_funcao']
+          id: string
+          nome: string
+          perfil?: Database['public']['Enums']['user_perfil']
+          situacao?: Database['public']['Enums']['user_situacao']
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          funcao?: Database['public']['Enums']['user_funcao']
+          id?: string
+          nome?: string
+          perfil?: Database['public']['Enums']['user_perfil']
+          situacao?: Database['public']['Enums']['user_situacao']
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { user_uid: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
+      user_perfil: 'Administrador' | 'Gestor' | 'Colaborador'
+      user_situacao: 'ativo' | 'inativo'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -143,6 +237,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],
+      user_perfil: ['Administrador', 'Gestor', 'Colaborador'],
+      user_situacao: ['ativo', 'inativo'],
+    },
   },
 } as const

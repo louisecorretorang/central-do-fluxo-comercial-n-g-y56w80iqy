@@ -17,6 +17,7 @@ import MinhaFila from './pages/MinhaFila'
 import Oportunidades from './pages/Oportunidades'
 import Quadro from './pages/Quadro'
 import Clientes from './pages/Clientes'
+import ClienteDetalhes from './pages/ClienteDetalhes'
 import Painel from './pages/Painel'
 import Usuarios from './pages/Usuarios'
 
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/oportunidades" element={<Oportunidades />} />
                 <Route path="/quadro" element={<Quadro />} />
                 <Route path="/clientes" element={<Clientes />} />
+                <Route path="/clientes/:id" element={<ClienteDetalhes />} />
                 <Route path="/painel" element={<Painel />} />
                 {/* Rota restrita a Administrador */}
                 <Route element={<AdminRoute />}>

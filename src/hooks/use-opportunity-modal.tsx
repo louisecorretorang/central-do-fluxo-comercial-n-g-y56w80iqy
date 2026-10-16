@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, ReactNode } from 'react'
 
 interface OpportunityModalContextType {
   isOpen: boolean
-  openModal: () => void
+  prefilledClient: string
+  openModal: (defaultClientName?: string) => void
   closeModal: () => void
   setIsOpen: (open: boolean) => void
 }
@@ -11,12 +12,39 @@ const OpportunityModalContext = createContext<OpportunityModalContextType | unde
 
 export const OpportunityModalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [prefilledClient, setPrefilledClient] = useState('')
 
-  const openModal = () => setIsOpen(true)
-  const closeModal = () => setIsOpen(false)
+  const openModal = (defaultClientName?: string) => {
+    if (defaultClientName) {
+      setPrefilledClient(defaultClientName)
+    } else {
+      setPrefilledClient('')
+    }
+    setIsOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsOpen(false)
+    setPrefilledClient('')
+  }
+
+  const handleSetIsOpen = (open: boolean) => {
+    setIsOpen(open)
+    if (!open) {
+      setPrefilledClient('')
+    }
+  }
 
   return (
-    <OpportunityModalContext.Provider value={{ isOpen, openModal, closeModal, setIsOpen }}>
+    <OpportunityModalContext.Provider
+      value={{
+        isOpen,
+        prefilledClient,
+        openModal,
+        closeModal,
+        setIsOpen: handleSetIsOpen,
+      }}
+    >
       {children}
     </OpportunityModalContext.Provider>
   )
