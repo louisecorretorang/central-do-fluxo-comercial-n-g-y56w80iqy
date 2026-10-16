@@ -6,6 +6,10 @@ import {
   CriarOportunidadeResult,
   OportunidadeEtapa,
   OportunidadeChecklistItem,
+  OportunidadeInteracao,
+  OportunidadeTimelineItem,
+  InteracaoTipo,
+  TimelineTipo,
 } from '@/types/oportunidades'
 
 // Helper seguro para queries flexíveis
@@ -179,6 +183,7 @@ export async function getOportunidadeById(
         observacoes,
         situacao,
         etapa_atual_id,
+        numero_quiver,
         criado_por,
         created_at,
         updated_at,
@@ -186,9 +191,10 @@ export async function getOportunidadeById(
         produto:produtos(id, nome, frente),
         seguradora:seguradoras_operadoras(id, nome),
         responsavel:profiles!responsavel_comercial_id(id, nome, email),
+        criador:profiles!criado_por(id, nome, email),
         origem:origens_lead(id, nome),
         equipe:equipes(id, nome),
-        etapa_atual:oportunidades_etapas!etapa_atual_id(id, nome)
+        etapa_atual:oportunidades_etapas!etapa_atual_id(id, nome, ordem, situacao, concluida_em, responsavel_usuario_id)
       `)
       .eq('id', id)
       .single()
@@ -237,7 +243,10 @@ export async function getOportunidadeById(
     if (etapaIds.length > 0) {
       const { data: itensData, error: itensError } = await db
         .from('oportunidades_checklist_itens')
-        .select('*')
+        .select(`
+          *,
+          concluido_usuario:profiles!concluido_por(id, nome)
+        `)
         .in('etapa_oportunidade_id', etapaIds)
         .order('ordem', { ascending: true })
 
@@ -259,8 +268,12 @@ export async function getOportunidadeById(
               opcoes: item.opcoes,
               obrigatorio: item.obrigatorio,
               valor: item.valor,
+              arquivo_nome: item.arquivo_nome,
+              arquivo_url: item.arquivo_url,
+              arquivo_tamanho: item.arquivo_tamanho,
               concluido: item.concluido,
               concluido_por: item.concluido_por,
+              concluido_por_nome: item.concluido_usuario?.nome || null,
               concluido_em: item.concluido_em,
               created_at: item.created_at,
               updated_at: item.updated_at,
@@ -293,6 +306,72 @@ export async function getOportunidadeById(
       itens: checklistMap[e.id] || [],
       created_at: e.created_at,
       updated_at: e.updated_at,
+    }))
+
+    // Buscar interações ordenadas da mais recente para a mais antiga
+    const { data: interacoesData, error: interacoesError } = await db
+      .from('oportunidades_interacoes')
+      .select(`
+        id,
+        oportunidade_id,
+        tipo,
+        data_contato,
+        resumo,
+        registrado_por,
+        created_at,
+        updated_at,
+        usuario:profiles!registrado_por(id, nome)
+      `)
+      .eq('oportunidade_id', id)
+      .order('data_contato', { ascending: false })
+
+    if (interacoesError) {
+      console.error('Erro ao buscar interações:', interacoesError)
+    }
+
+    const interacoes: OportunidadeInteracao[] = (interacoesData || []).map((i: any) => ({
+      id: i.id,
+      oportunidade_id: i.oportunidade_id,
+      tipo: i.tipo,
+      data_contato: i.data_contato,
+      resumo: i.resumo,
+      registrado_por: i.registrado_por,
+      registrado_por_nome: i.usuario?.nome || 'Usuário',
+      created_at: i.created_at,
+      updated_at: i.updated_at,
+    }))
+
+    // Buscar timeline ordenada da mais recente para a mais antiga
+    const { data: timelineData, error: timelineError } = await db
+      .from('oportunidades_linha_tempo')
+      .select(`
+        id,
+        oportunidade_id,
+        tipo,
+        titulo,
+        descricao,
+        usuario_id,
+        metadados,
+        created_at,
+        usuario:profiles!usuario_id(id, nome)
+      `)
+      .eq('oportunidade_id', id)
+      .order('created_at', { ascending: false })
+
+    if (timelineError) {
+      console.error('Erro ao buscar linha do tempo:', timelineError)
+    }
+
+    const timeline: OportunidadeTimelineItem[] = (timelineData || []).map((t: any) => ({
+      id: t.id,
+      oportunidade_id: t.oportunidade_id,
+      tipo: t.tipo,
+      titulo: t.titulo,
+      descricao: t.descricao,
+      usuario_id: t.usuario_id,
+      usuario_nome: t.usuario?.nome || null,
+      metadados: t.metadados,
+      created_at: t.created_at,
     }))
 
     const clienteNome =
@@ -329,15 +408,405 @@ export async function getOportunidadeById(
       situacao: opp.situacao,
       etapa_atual_id: opp.etapa_atual_id,
       etapa_atual_nome: opp.etapa_atual?.nome || null,
+      numero_quiver: opp.numero_quiver || null,
       criado_por: opp.criado_por,
+      criado_por_nome: opp.criador?.nome || null,
       created_at: opp.created_at,
       updated_at: opp.updated_at,
       etapas,
+      interacoes,
+      timeline,
     }
 
     return { data: detalhe, error: null }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha ao buscar detalhes da oportunidade.'
     return { data: null, error: msg }
+  }
+}
+
+/**
+ * Atualiza o número de proposta/apólice no Quiver da oportunidade
+ */
+export async function updateNumeroQuiver(
+  oportunidadeId: string,
+  numeroQuiver: string | null,
+  usuarioId: string,
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db
+      .from('oportunidades')
+      .update({
+        numero_quiver: numeroQuiver ? numeroQuiver.trim() : null,
+      })
+      .eq('id', oportunidadeId)
+
+    if (error) {
+      console.error('Erro ao salvar número Quiver:', error)
+      return { success: false, error: error.message }
+    }
+
+    // Registrar na linha do tempo
+    await registrarEventoLinhaTempo({
+      oportunidade_id: oportunidadeId,
+      tipo: 'quiver',
+      titulo: numeroQuiver ? 'Nº Quiver atualizado' : 'Nº Quiver removido',
+      descricao: numeroQuiver
+        ? `Número da proposta/apólice cadastrado como: ${numeroQuiver.trim()}`
+        : 'Número de identificação do Quiver foi desvinculado.',
+      usuario_id: usuarioId,
+      metadados: { numero_quiver: numeroQuiver },
+    })
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao salvar número do Quiver.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Registra um evento na linha do tempo da oportunidade
+ */
+export async function registrarEventoLinhaTempo(input: {
+  oportunidade_id: string
+  tipo: TimelineTipo
+  titulo: string
+  descricao?: string | null
+  usuario_id?: string | null
+  metadados?: Record<string, unknown> | null
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.from('oportunidades_linha_tempo').insert({
+      oportunidade_id: input.oportunidade_id,
+      tipo: input.tipo,
+      titulo: input.titulo,
+      descricao: input.descricao || null,
+      usuario_id: input.usuario_id || null,
+      metadados: input.metadados || null,
+    })
+
+    if (error) {
+      console.error('Erro ao registrar na linha do tempo:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao registrar linha do tempo.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Adiciona uma interação com o cliente
+ */
+export async function createInteracao(input: {
+  oportunidade_id: string
+  tipo: InteracaoTipo
+  data_contato: string
+  resumo: string
+  registrado_por: string
+}): Promise<{ data: OportunidadeInteracao | null; error: string | null }> {
+  try {
+    const { data, error } = await db
+      .from('oportunidades_interacoes')
+      .insert({
+        oportunidade_id: input.oportunidade_id,
+        tipo: input.tipo,
+        data_contato: input.data_contato,
+        resumo: input.resumo.trim(),
+        registrado_por: input.registrado_por,
+      })
+      .select(`
+        id,
+        oportunidade_id,
+        tipo,
+        data_contato,
+        resumo,
+        registrado_por,
+        created_at,
+        updated_at,
+        usuario:profiles!registrado_por(id, nome)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Erro ao registrar contato:', error)
+      return { data: null, error: error.message }
+    }
+
+    // Gravar evento na linha do tempo automaticamente
+    await registrarEventoLinhaTempo({
+      oportunidade_id: input.oportunidade_id,
+      tipo: 'interacao',
+      titulo: `Contato registrado: ${input.tipo}`,
+      descricao: input.resumo.trim(),
+      usuario_id: input.registrado_por,
+      metadados: { interacao_id: data.id, tipo: input.tipo },
+    })
+
+    const nova: OportunidadeInteracao = {
+      id: data.id,
+      oportunidade_id: data.oportunidade_id,
+      tipo: data.tipo,
+      data_contato: data.data_contato,
+      resumo: data.resumo,
+      registrado_por: data.registrado_por,
+      registrado_por_nome: data.usuario?.nome || 'Usuário',
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    }
+
+    return { data: nova, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao adicionar contato.'
+    return { data: null, error: msg }
+  }
+}
+
+/**
+ * Atualiza o valor e estado de conclusão de um item de checklist
+ */
+export async function updateChecklistItem(input: {
+  item_id: string
+  oportunidade_id: string
+  etapa_nome?: string
+  titulo: string
+  valor?: string | null
+  concluido: boolean
+  usuario_id: string
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const now = new Date().toISOString()
+    const { error } = await db
+      .from('oportunidades_checklist_itens')
+      .update({
+        valor: input.valor !== undefined ? input.valor : null,
+        concluido: input.concluido,
+        concluido_por: input.concluido ? input.usuario_id : null,
+        concluido_em: input.concluido ? now : null,
+      })
+      .eq('id', input.item_id)
+
+    if (error) {
+      console.error('Erro ao atualizar item do checklist:', error)
+      return { success: false, error: error.message }
+    }
+
+    // Registrar na linha do tempo se foi marcado como concluído
+    if (input.concluido) {
+      await registrarEventoLinhaTempo({
+        oportunidade_id: input.oportunidade_id,
+        tipo: 'checklist_item',
+        titulo: `Item de checklist cumprido: "${input.titulo}"`,
+        descricao: input.valor ? `Valor preenchido: ${input.valor}` : 'Item confirmado.',
+        usuario_id: input.usuario_id,
+        metadados: { item_id: input.item_id },
+      })
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao salvar item do checklist.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Upload de arquivo anexo no storage privado do Supabase
+ */
+export async function uploadChecklistAnexo(params: {
+  oportunidade_id: string
+  etapa_id: string
+  item_id: string
+  titulo: string
+  file: File
+  usuario_id: string
+}): Promise<{
+  data: { arquivo_nome: string; arquivo_url: string; arquivo_tamanho: number } | null
+  error: string | null
+}> {
+  try {
+    const ext = params.file.name.split('.').pop() || 'bin'
+    const cleanFileName = params.file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const filePath = `${params.oportunidade_id}/${params.etapa_id}/${params.item_id}_${Date.now()}_${cleanFileName}`
+
+    // Upload no bucket privado oportunidades-anexos
+    const { error: uploadErr } = await supabase.storage
+      .from('oportunidades-anexos')
+      .upload(filePath, params.file, {
+        upsert: true,
+      })
+
+    if (uploadErr) {
+      console.error('Erro no upload para o storage:', uploadErr)
+      return { data: null, error: uploadErr.message }
+    }
+
+    const now = new Date().toISOString()
+    const { error: dbErr } = await db
+      .from('oportunidades_checklist_itens')
+      .update({
+        arquivo_nome: params.file.name,
+        arquivo_url: filePath,
+        arquivo_tamanho: params.file.size,
+        concluido: true,
+        concluido_por: params.usuario_id,
+        concluido_em: now,
+      })
+      .eq('id', params.item_id)
+
+    if (dbErr) {
+      console.error('Erro ao atualizar registro do anexo:', dbErr)
+      return { data: null, error: dbErr.message }
+    }
+
+    // Registrar na linha do tempo
+    await registrarEventoLinhaTempo({
+      oportunidade_id: params.oportunidade_id,
+      tipo: 'documento',
+      titulo: `Documento anexado: "${params.titulo}"`,
+      descricao: `Arquivo "${params.file.name}" anexado com sucesso.`,
+      usuario_id: params.usuario_id,
+      metadados: {
+        item_id: params.item_id,
+        arquivo_nome: params.file.name,
+        arquivo_caminho: filePath,
+      },
+    })
+
+    return {
+      data: {
+        arquivo_nome: params.file.name,
+        arquivo_url: filePath,
+        arquivo_tamanho: params.file.size,
+      },
+      error: null,
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao processar anexo.'
+    return { data: null, error: msg }
+  }
+}
+
+/**
+ * Gera URL assinada temporária para download do anexo privado
+ */
+export async function getDownloadAnexoUrl(
+  filePath: string,
+): Promise<{ url: string | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase.storage
+      .from('oportunidades-anexos')
+      .createSignedUrl(filePath, 3600) // 1 hora de validade
+
+    if (error || !data) {
+      console.error('Erro ao gerar URL assinada:', error)
+      return { url: null, error: error?.message || 'Erro ao gerar link de download.' }
+    }
+
+    return { url: data.signedUrl, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao obter anexo.'
+    return { url: null, error: msg }
+  }
+}
+
+/**
+ * Conclui a etapa atual e avança para a próxima etapa (se houver)
+ */
+export async function avancarEtapaOportunidade(params: {
+  oportunidade_id: string
+  etapa_atual_id: string
+  etapas: OportunidadeEtapa[]
+  usuario_id: string
+}): Promise<{ success: boolean; proximaEtapaId: string | null; error: string | null }> {
+  try {
+    const ordenadas = [...params.etapas].sort((a, b) => a.ordem - b.ordem)
+    const idxAtual = ordenadas.findIndex((e) => e.id === params.etapa_atual_id)
+
+    if (idxAtual === -1) {
+      return { success: false, proximaEtapaId: null, error: 'Etapa atual não identificada.' }
+    }
+
+    const etapaAtual = ordenadas[idxAtual]
+    const proximaEtapa = idxAtual + 1 < ordenadas.length ? ordenadas[idxAtual + 1] : null
+
+    const now = new Date().toISOString()
+
+    // 1. Marcar a etapa atual como concluida
+    const { error: errEtapaAtual } = await db
+      .from('oportunidades_etapas')
+      .update({
+        situacao: 'concluida',
+        concluida_em: now,
+        responsavel_usuario_id: etapaAtual.responsavel_usuario_id || params.usuario_id,
+      })
+      .eq('id', params.etapa_atual_id)
+
+    if (errEtapaAtual) {
+      console.error('Erro ao concluir etapa atual:', errEtapaAtual)
+      return { success: false, proximaEtapaId: null, error: errEtapaAtual.message }
+    }
+
+    // 2. Se houver próxima etapa, iniciá-la e atualizar etapa_atual_id
+    if (proximaEtapa) {
+      const { error: errProx } = await db
+        .from('oportunidades_etapas')
+        .update({
+          situacao: 'em_andamento',
+          iniciada_em: now,
+        })
+        .eq('id', proximaEtapa.id)
+
+      if (errProx) {
+        console.error('Erro ao iniciar próxima etapa:', errProx)
+        return { success: false, proximaEtapaId: null, error: errProx.message }
+      }
+
+      // Atualizar oportunidade
+      const { error: errOpp } = await db
+        .from('oportunidades')
+        .update({
+          etapa_atual_id: proximaEtapa.id,
+        })
+        .eq('id', params.oportunidade_id)
+
+      if (errOpp) {
+        console.error('Erro ao atualizar etapa_atual_id:', errOpp)
+        return { success: false, proximaEtapaId: null, error: errOpp.message }
+      }
+
+      // Linha do tempo
+      await registrarEventoLinhaTempo({
+        oportunidade_id: params.oportunidade_id,
+        tipo: 'etapa_concluida',
+        titulo: `Etapa concluída: "${etapaAtual.nome}"`,
+        descricao: `Etapa avançada para "${proximaEtapa.nome}".`,
+        usuario_id: params.usuario_id,
+        metadados: {
+          etapa_concluida_id: etapaAtual.id,
+          proxima_etapa_id: proximaEtapa.id,
+        },
+      })
+
+      return { success: true, proximaEtapaId: proximaEtapa.id, error: null }
+    } else {
+      // Era a última etapa
+      await registrarEventoLinhaTempo({
+        oportunidade_id: params.oportunidade_id,
+        tipo: 'etapa_concluida',
+        titulo: `Última etapa concluída: "${etapaAtual.nome}"`,
+        descricao: 'Todas as etapas do fluxo foram cumpridas.',
+        usuario_id: params.usuario_id,
+        metadados: { etapa_concluida_id: etapaAtual.id },
+      })
+
+      return { success: true, proximaEtapaId: null, error: null }
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao avançar etapa.'
+    return { success: false, proximaEtapaId: null, error: msg }
   }
 }

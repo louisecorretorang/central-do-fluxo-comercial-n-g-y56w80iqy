@@ -339,6 +339,299 @@ export type Database = {
         }
         Relationships: []
       }
+      oportunidades: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          criado_por: string | null
+          data_prevista_fechamento: string
+          equipe_id: string | null
+          etapa_atual_id: string | null
+          fluxo_modelo_id: string
+          fluxo_versao: number
+          id: string
+          observacoes: string | null
+          origem_id: string
+          produto_id: string
+          protocolo: string
+          responsavel_comercial_id: string
+          seguradora_id: string | null
+          situacao: Database['public']['Enums']['oportunidade_situacao']
+          updated_at: string
+          usou_fluxo_generico: boolean
+          valor_estimado: number
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          criado_por?: string | null
+          data_prevista_fechamento: string
+          equipe_id?: string | null
+          etapa_atual_id?: string | null
+          fluxo_modelo_id: string
+          fluxo_versao?: number
+          id?: string
+          observacoes?: string | null
+          origem_id: string
+          produto_id: string
+          protocolo: string
+          responsavel_comercial_id: string
+          seguradora_id?: string | null
+          situacao?: Database['public']['Enums']['oportunidade_situacao']
+          updated_at?: string
+          usou_fluxo_generico?: boolean
+          valor_estimado?: number
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          criado_por?: string | null
+          data_prevista_fechamento?: string
+          equipe_id?: string | null
+          etapa_atual_id?: string | null
+          fluxo_modelo_id?: string
+          fluxo_versao?: number
+          id?: string
+          observacoes?: string | null
+          origem_id?: string
+          produto_id?: string
+          protocolo?: string
+          responsavel_comercial_id?: string
+          seguradora_id?: string | null
+          situacao?: Database['public']['Enums']['oportunidade_situacao']
+          updated_at?: string
+          usou_fluxo_generico?: boolean
+          valor_estimado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_oportunidade_etapa_atual'
+            columns: ['etapa_atual_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades_etapas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_criado_por_fkey'
+            columns: ['criado_por']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_equipe_id_fkey'
+            columns: ['equipe_id']
+            isOneToOne: false
+            referencedRelation: 'equipes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_fluxo_modelo_id_fkey'
+            columns: ['fluxo_modelo_id']
+            isOneToOne: false
+            referencedRelation: 'fluxo_modelos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_origem_id_fkey'
+            columns: ['origem_id']
+            isOneToOne: false
+            referencedRelation: 'origens_lead'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_produto_id_fkey'
+            columns: ['produto_id']
+            isOneToOne: false
+            referencedRelation: 'produtos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_responsavel_comercial_id_fkey'
+            columns: ['responsavel_comercial_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_seguradora_id_fkey'
+            columns: ['seguradora_id']
+            isOneToOne: false
+            referencedRelation: 'seguradoras_operadoras'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      oportunidades_checklist_itens: {
+        Row: {
+          concluido: boolean
+          concluido_em: string | null
+          concluido_por: string | null
+          created_at: string
+          etapa_oportunidade_id: string
+          formato: Database['public']['Enums']['checklist_campo_formato'] | null
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          tipo: Database['public']['Enums']['checklist_item_tipo']
+          titulo: string
+          updated_at: string
+          valor: string | null
+        }
+        Insert: {
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string
+          etapa_oportunidade_id: string
+          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem: number
+          tipo: Database['public']['Enums']['checklist_item_tipo']
+          titulo: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Update: {
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          created_at?: string
+          etapa_oportunidade_id?: string
+          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          tipo?: Database['public']['Enums']['checklist_item_tipo']
+          titulo?: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'oportunidades_checklist_itens_concluido_por_fkey'
+            columns: ['concluido_por']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_checklist_itens_etapa_oportunidade_id_fkey'
+            columns: ['etapa_oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades_etapas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      oportunidades_etapas: {
+        Row: {
+          concluida_em: string | null
+          created_at: string
+          descricao: string | null
+          equipe_id: string | null
+          funcao: Database['public']['Enums']['user_funcao'] | null
+          id: string
+          iniciada_em: string | null
+          is_etapa_ganho: boolean
+          nome: string
+          oportunidade_id: string
+          ordem: number
+          prazo_dias: number | null
+          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_usuario_id: string | null
+          situacao: Database['public']['Enums']['etapa_oportunidade_situacao']
+          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at: string
+        }
+        Insert: {
+          concluida_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          equipe_id?: string | null
+          funcao?: Database['public']['Enums']['user_funcao'] | null
+          id?: string
+          iniciada_em?: string | null
+          is_etapa_ganho?: boolean
+          nome: string
+          oportunidade_id: string
+          ordem: number
+          prazo_dias?: number | null
+          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_usuario_id?: string | null
+          situacao?: Database['public']['Enums']['etapa_oportunidade_situacao']
+          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at?: string
+        }
+        Update: {
+          concluida_em?: string | null
+          created_at?: string
+          descricao?: string | null
+          equipe_id?: string | null
+          funcao?: Database['public']['Enums']['user_funcao'] | null
+          id?: string
+          iniciada_em?: string | null
+          is_etapa_ganho?: boolean
+          nome?: string
+          oportunidade_id?: string
+          ordem?: number
+          prazo_dias?: number | null
+          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_usuario_id?: string | null
+          situacao?: Database['public']['Enums']['etapa_oportunidade_situacao']
+          tipo?: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'oportunidades_etapas_equipe_id_fkey'
+            columns: ['equipe_id']
+            isOneToOne: false
+            referencedRelation: 'equipes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_etapas_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_etapas_responsavel_usuario_id_fkey'
+            columns: ['responsavel_usuario_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      oportunidades_protocolo_seq: {
+        Row: {
+          ano: number
+          ultimo_numero: number
+        }
+        Insert: {
+          ano: number
+          ultimo_numero?: number
+        }
+        Update: {
+          ano?: number
+          ultimo_numero?: number
+        }
+        Relationships: []
+      }
       origens_lead: {
         Row: {
           created_at: string
@@ -505,6 +798,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      abrir_oportunidade: {
+        Args: {
+          p_cliente_id: string
+          p_data_prevista_fechamento: string
+          p_observacoes?: string
+          p_origem_id: string
+          p_produto_id: string
+          p_responsavel_comercial_id: string
+          p_seguradora_id: string
+          p_valor_estimado: number
+        }
+        Returns: Json
+      }
+      gerar_proximo_protocolo: { Args: never; Returns: string }
       is_active_user: { Args: { user_uid: string }; Returns: boolean }
       is_admin: { Args: { user_uid: string }; Returns: boolean }
     }
@@ -518,11 +825,13 @@ export type Database = {
       cliente_situacao: 'ativo' | 'arquivado'
       cliente_tipo: 'PJ' | 'PF'
       contato_cargo_area: 'RH' | 'Financeiro' | 'Sócio' | 'Administrativo' | 'Outro'
+      etapa_oportunidade_situacao: 'pendente' | 'em_andamento' | 'concluida'
       fluxo_etapa_tipo: 'Trabalho interno' | 'Aguardando cliente' | 'Aguardando seguradora'
       fluxo_responsavel_tipo: 'responsavel_comercial' | 'fila_equipe'
       fluxo_situacao: 'ativo' | 'inativo'
       indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
       motivo_tipo: 'perda' | 'descarte' | 'adiamento'
+      oportunidade_situacao: 'Em andamento' | 'Ganha' | 'Perdida' | 'Descartada' | 'Adiada'
       user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
       user_perfil: 'Administrador' | 'Gestor' | 'Colaborador'
       user_situacao: 'ativo' | 'inativo'
@@ -660,11 +969,13 @@ export const Constants = {
       cliente_situacao: ['ativo', 'arquivado'],
       cliente_tipo: ['PJ', 'PF'],
       contato_cargo_area: ['RH', 'Financeiro', 'Sócio', 'Administrativo', 'Outro'],
+      etapa_oportunidade_situacao: ['pendente', 'em_andamento', 'concluida'],
       fluxo_etapa_tipo: ['Trabalho interno', 'Aguardando cliente', 'Aguardando seguradora'],
       fluxo_responsavel_tipo: ['responsavel_comercial', 'fila_equipe'],
       fluxo_situacao: ['ativo', 'inativo'],
       indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
       motivo_tipo: ['perda', 'descarte', 'adiamento'],
+      oportunidade_situacao: ['Em andamento', 'Ganha', 'Perdida', 'Descartada', 'Adiada'],
       user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],
       user_perfil: ['Administrador', 'Gestor', 'Colaborador'],
       user_situacao: ['ativo', 'inativo'],

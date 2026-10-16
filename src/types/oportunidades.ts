@@ -12,6 +12,42 @@ export type OportunidadeSituacao = 'Em andamento' | 'Ganha' | 'Perdida' | 'Desca
 
 export type EtapaOportunidadeSituacao = 'pendente' | 'em_andamento' | 'concluida'
 
+export type InteracaoTipo = 'Ligação' | 'WhatsApp' | 'E-mail' | 'Reunião' | 'Outro'
+
+export interface OportunidadeInteracao {
+  id: string
+  oportunidade_id: string
+  tipo: InteracaoTipo
+  data_contato: string
+  resumo: string
+  registrado_por: string
+  registrado_por_nome?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export type TimelineTipo =
+  | 'criacao'
+  | 'etapa_concluida'
+  | 'troca_responsavel'
+  | 'documento'
+  | 'interacao'
+  | 'checklist_item'
+  | 'quiver'
+  | 'geral'
+
+export interface OportunidadeTimelineItem {
+  id: string
+  oportunidade_id: string
+  tipo: TimelineTipo
+  titulo: string
+  descricao?: string | null
+  usuario_id?: string | null
+  usuario_nome?: string | null
+  metadados?: Record<string, unknown> | null
+  created_at: string
+}
+
 export interface OportunidadeChecklistItem {
   id: string
   etapa_oportunidade_id: string
@@ -22,8 +58,12 @@ export interface OportunidadeChecklistItem {
   opcoes?: string[] | null
   obrigatorio: boolean
   valor?: string | null
+  arquivo_nome?: string | null
+  arquivo_url?: string | null
+  arquivo_tamanho?: number | null
   concluido: boolean
   concluido_por?: string | null
+  concluido_por_nome?: string | null
   concluido_em?: string | null
   created_at?: string
   updated_at?: string
@@ -79,13 +119,17 @@ export interface OportunidadeResumo {
   situacao: OportunidadeSituacao
   etapa_atual_id?: string | null
   etapa_atual_nome?: string | null
+  numero_quiver?: string | null
   criado_por?: string | null
+  criado_por_nome?: string | null
   created_at: string
   updated_at: string
 }
 
 export interface OportunidadeDetalhe extends OportunidadeResumo {
   etapas: OportunidadeEtapa[]
+  interacoes: OportunidadeInteracao[]
+  timeline: OportunidadeTimelineItem[]
 }
 
 export interface CriarOportunidadeInput {
