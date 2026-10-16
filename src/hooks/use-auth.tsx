@@ -10,6 +10,7 @@ interface AuthContextType {
   perfil: UserPerfil | null
   funcao: UserFuncao | null
   situacao: UserSituacao | null
+  equipesIds: string[]
   isAdmin: boolean
   isGestor: boolean
   isColaborador: boolean
@@ -33,13 +34,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [equipesIds, setEquipesIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Função para carregar o perfil do usuário logado
+  // Função para carregar o perfil do usuário logado e suas equipes
   const loadProfile = useCallback(async (userId: string, userEmail?: string | null) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const client = supabase as any
+      let resolvedProfile: UserProfile | null = null
+
       const { data, error } = await client
         .from('profiles')
         .select('id, nome, email, telefone, perfil, funcao, situacao, created_at, updated_at')
@@ -47,12 +51,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle()
 
       if (!error && data) {
-        setProfile(data as UserProfile)
-        return data as UserProfile
-      }
-
-      // Se não encontrou por ID, tentar por email
-      if (userEmail) {
+        resolvedProfile = data as UserProfile
+      } else if (userEmail) {
         const { data: byEmail } = await client
           .from('profiles')
           .select('id, nome, email, telefone, perfil, funcao, situacao, created_at, updated_at')
@@ -60,14 +60,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle()
 
         if (byEmail) {
-          setProfile(byEmail as UserProfile)
-          return byEmail as UserProfile
+          resolvedProfile = byEmail as UserProfile
         }
       }
 
+      if (resolvedProfile) {
+        setProfile(resolvedProfile)
+        // Buscar equipes do usuário
+        const { data: eqData } = await client
+          .from('profile_equipes')
+          .select('equipe_id')
+          .eq('profile_id', resolvedProfile.id)
+
+        if (eqData) {
+          setEquipesIds(eqData.map((r: { equipe_id: string }) => r.equipe_id))
+        } else {
+          setEquipesIds([])
+        }
+        return resolvedProfile
+      }
+
+      setProfile(null)
+      setEquipesIds([])
       return null
     } catch (err) {
       console.error('Erro ao buscar perfil:', err)
+      setProfile(null)
+      setEquipesIds([])
       return null
     }
   }, [])
@@ -147,6 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     setProfile(null)
+    setEquipesIds([])
     setUser(null)
     setSession(null)
     return { error }
@@ -185,6 +205,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         perfil,
         funcao,
         situacao,
+        equipesIds,
         isAdmin,
         isGestor,
         isColaborador,

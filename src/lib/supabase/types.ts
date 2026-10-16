@@ -339,6 +339,57 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          created_at: string
+          destinatario_id: string
+          id: string
+          lida: boolean
+          lida_em: string | null
+          link: string | null
+          mensagem: string
+          oportunidade_id: string | null
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_id: string
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          link?: string | null
+          mensagem: string
+          oportunidade_id?: string | null
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_id?: string
+          id?: string
+          lida?: boolean
+          lida_em?: string | null
+          link?: string | null
+          mensagem?: string
+          oportunidade_id?: string | null
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'notificacoes_destinatario_id_fkey'
+            columns: ['destinatario_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'notificacoes_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       oportunidades: {
         Row: {
           cliente_id: string
@@ -919,9 +970,50 @@ export type Database = {
         }
         Returns: Json
       }
+      arquivar_oportunidade: {
+        Args: { p_motivo?: string; p_oportunidade_id: string }
+        Returns: Json
+      }
+      assumir_etapa_oportunidade: {
+        Args: { p_etapa_id: string; p_oportunidade_id: string }
+        Returns: Json
+      }
+      concluir_etapa_oportunidade: {
+        Args: { p_etapa_atual_id: string; p_oportunidade_id: string }
+        Returns: Json
+      }
+      confirmar_ganho_oportunidade: {
+        Args: {
+          p_numero_proposta: string
+          p_oportunidade_id: string
+          p_seguradora_id: string
+          p_valor_fechado: number
+        }
+        Returns: Json
+      }
       gerar_proximo_protocolo: { Args: never; Returns: string }
       is_active_user: { Args: { user_uid: string }; Returns: boolean }
       is_admin: { Args: { user_uid: string }; Returns: boolean }
+      marcar_notificacoes_lidas: {
+        Args: { p_notificacao_id?: string }
+        Returns: Json
+      }
+      marcar_oportunidade_perdida: {
+        Args: {
+          p_motivo_id: string
+          p_observacao?: string
+          p_oportunidade_id: string
+        }
+        Returns: Json
+      }
+      voltar_etapa_oportunidade: {
+        Args: {
+          p_etapa_atual_id: string
+          p_motivo: string
+          p_oportunidade_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       canal_cotacao: 'Portal' | 'Multicálculo' | 'E-mail' | 'WhatsApp'
@@ -940,7 +1032,15 @@ export type Database = {
       indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
       interacao_tipo: 'Ligação' | 'WhatsApp' | 'E-mail' | 'Reunião' | 'Outro'
       motivo_tipo: 'perda' | 'descarte' | 'adiamento'
-      oportunidade_situacao: 'Em andamento' | 'Ganha' | 'Perdida' | 'Descartada' | 'Adiada'
+      oportunidade_situacao:
+        | 'Em andamento'
+        | 'Ganha'
+        | 'Perdida'
+        | 'Descartada'
+        | 'Adiada'
+        | 'Ganha — em finalização'
+        | 'Concluída'
+        | 'Arquivada'
       user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
       user_perfil: 'Administrador' | 'Gestor' | 'Colaborador'
       user_situacao: 'ativo' | 'inativo'
@@ -1085,7 +1185,16 @@ export const Constants = {
       indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
       interacao_tipo: ['Ligação', 'WhatsApp', 'E-mail', 'Reunião', 'Outro'],
       motivo_tipo: ['perda', 'descarte', 'adiamento'],
-      oportunidade_situacao: ['Em andamento', 'Ganha', 'Perdida', 'Descartada', 'Adiada'],
+      oportunidade_situacao: [
+        'Em andamento',
+        'Ganha',
+        'Perdida',
+        'Descartada',
+        'Adiada',
+        'Ganha — em finalização',
+        'Concluída',
+        'Arquivada',
+      ],
       user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],
       user_perfil: ['Administrador', 'Gestor', 'Colaborador'],
       user_situacao: ['ativo', 'inativo'],

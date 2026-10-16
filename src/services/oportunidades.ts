@@ -52,6 +52,14 @@ export async function createOportunidade(
 export async function getOportunidades(options?: {
   clienteId?: string
   search?: string
+  situacao?: string
+  produtoId?: string
+  seguradoraId?: string
+  responsavelId?: string
+  equipeId?: string
+  dataInicio?: string
+  dataFim?: string
+  fluxoModeloId?: string
 }): Promise<{ data: OportunidadeResumo[] | null; error: string | null }> {
   try {
     let query = db
@@ -73,6 +81,7 @@ export async function getOportunidades(options?: {
         observacoes,
         situacao,
         etapa_atual_id,
+        numero_quiver,
         criado_por,
         created_at,
         updated_at,
@@ -82,12 +91,46 @@ export async function getOportunidades(options?: {
         responsavel:profiles!responsavel_comercial_id(id, nome, email),
         origem:origens_lead(id, nome),
         equipe:equipes(id, nome),
-        etapa_atual:oportunidades_etapas!etapa_atual_id(id, nome)
+        etapa_atual:oportunidades_etapas!etapa_atual_id(
+          id,
+          nome,
+          ordem,
+          responsavel_tipo,
+          responsavel_usuario_id,
+          equipe_id,
+          funcao,
+          iniciada_em,
+          created_at
+        )
       `)
       .order('created_at', { ascending: false })
 
     if (options?.clienteId) {
       query = query.eq('cliente_id', options.clienteId)
+    }
+    if (options?.situacao && options.situacao !== 'todas') {
+      query = query.eq('situacao', options.situacao)
+    }
+    if (options?.produtoId && options.produtoId !== 'todos') {
+      query = query.eq('produto_id', options.produtoId)
+    }
+    if (options?.seguradoraId && options.seguradoraId !== 'todas') {
+      query = query.eq('seguradora_id', options.seguradoraId)
+    }
+    if (options?.responsavelId && options.responsavelId !== 'todos') {
+      query = query.eq('responsavel_comercial_id', options.responsavelId)
+    }
+    if (options?.equipeId && options.equipeId !== 'todas') {
+      query = query.eq('equipe_id', options.equipeId)
+    }
+    if (options?.fluxoModeloId) {
+      query = query.eq('fluxo_modelo_id', options.fluxoModeloId)
+    }
+    if (options?.dataInicio) {
+      query = query.gte('created_at', `${options.dataInicio}T00:00:00.000Z`)
+    }
+    if (options?.dataFim) {
+      query = query.lte('created_at', `${options.dataFim}T23:59:59.999Z`)
     }
 
     const { data, error } = await query
@@ -97,6 +140,9 @@ export async function getOportunidades(options?: {
       return { data: null, error: error.message }
     }
 
+    const now = Date.now()
+    const msInDay = 1000 * 60 * 60 * 24
+
     let items: OportunidadeResumo[] = (data || []).map((row: any) => {
       const clienteNome =
         row.cliente?.tipo === 'PJ'
@@ -104,6 +150,13 @@ export async function getOportunidades(options?: {
           : row.cliente?.nome_completo || 'Nome não informado'
 
       const clienteDoc = row.cliente?.tipo === 'PJ' ? row.cliente?.cnpj : row.cliente?.cpf
+
+      const etapa = row.etapa_atual
+      // Cálculo de dias na etapa atual:
+      // se iniciada_em existir, usa iniciada_em; senão usa created_at da etapa ou da oportunidade
+      const inicioEtapaStr = etapa?.iniciada_em || etapa?.created_at || row.created_at
+      const inicioEtapaTime = inicioEtapaStr ? new Date(inicioEtapaStr).getTime() : now
+      const diasNaEtapa = Math.max(0, Math.floor((now - inicioEtapaTime) / msInDay))
 
       return {
         id: row.id,
@@ -131,7 +184,15 @@ export async function getOportunidades(options?: {
         observacoes: row.observacoes,
         situacao: row.situacao,
         etapa_atual_id: row.etapa_atual_id,
-        etapa_atual_nome: row.etapa_atual?.nome || null,
+        etapa_atual_nome: etapa?.nome || null,
+        etapa_atual_ordem: etapa?.ordem ?? null,
+        etapa_atual_responsavel_tipo: etapa?.responsavel_tipo || null,
+        etapa_atual_responsavel_usuario_id: etapa?.responsavel_usuario_id || null,
+        etapa_atual_equipe_id: etapa?.equipe_id || null,
+        etapa_atual_funcao: etapa?.funcao || null,
+        etapa_atual_iniciada_em: etapa?.iniciada_em || null,
+        dias_na_etapa: diasNaEtapa,
+        numero_quiver: row.numero_quiver || null,
         criado_por: row.criado_por,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -140,14 +201,21 @@ export async function getOportunidades(options?: {
 
     if (options?.search && options.search.trim()) {
       const term = options.search.trim().toLowerCase()
-      items = items.filter(
-        (opp) =>
+      const termDigits = options.search.replace(/\D/g, '')
+
+      items = items.filter((opp) => {
+        const docDigits = (opp.cliente_documento || '').replace(/\D/g, '')
+        const matchesDoc = termDigits && docDigits.includes(termDigits)
+
+        return (
           opp.protocolo.toLowerCase().includes(term) ||
           opp.cliente_nome.toLowerCase().includes(term) ||
           opp.produto_nome.toLowerCase().includes(term) ||
           (opp.seguradora_nome && opp.seguradora_nome.toLowerCase().includes(term)) ||
-          opp.responsavel_comercial_nome.toLowerCase().includes(term),
-      )
+          opp.responsavel_comercial_nome.toLowerCase().includes(term) ||
+          matchesDoc
+        )
+      })
     }
 
     return { data: items, error: null }

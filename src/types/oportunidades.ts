@@ -127,11 +127,30 @@ export interface OportunidadeResumo {
   situacao: OportunidadeSituacao
   etapa_atual_id?: string | null
   etapa_atual_nome?: string | null
+  etapa_atual_ordem?: number | null
+  etapa_atual_responsavel_tipo?: FluxoResponsavelTipo | null
+  etapa_atual_responsavel_usuario_id?: string | null
+  etapa_atual_equipe_id?: string | null
+  etapa_atual_funcao?: UserFuncao | null
+  etapa_atual_iniciada_em?: string | null
+  dias_na_etapa?: number
   numero_quiver?: string | null
   criado_por?: string | null
   criado_por_nome?: string | null
   created_at: string
   updated_at: string
+}
+
+export interface OportunidadesFilter {
+  search?: string
+  situacao?: string
+  produtoId?: string
+  seguradoraId?: string
+  responsavelId?: string
+  equipeId?: string
+  dataInicio?: string // AAAA-MM-DD
+  dataFim?: string // AAAA-MM-DD
+  clienteId?: string
 }
 
 export interface OportunidadeDetalhe extends OportunidadeResumo {
