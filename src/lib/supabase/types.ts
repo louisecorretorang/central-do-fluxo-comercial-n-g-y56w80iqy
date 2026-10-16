@@ -154,6 +154,170 @@ export type Database = {
         }
         Relationships: []
       }
+      fluxo_checklist_itens: {
+        Row: {
+          created_at: string
+          etapa_id: string
+          formato: Database['public']['Enums']['checklist_campo_formato'] | null
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          tipo: Database['public']['Enums']['checklist_item_tipo']
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          etapa_id: string
+          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem: number
+          tipo: Database['public']['Enums']['checklist_item_tipo']
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          etapa_id?: string
+          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          tipo?: Database['public']['Enums']['checklist_item_tipo']
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fluxo_checklist_itens_etapa_id_fkey'
+            columns: ['etapa_id']
+            isOneToOne: false
+            referencedRelation: 'fluxo_etapas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      fluxo_etapas: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          equipe_id: string | null
+          funcao: Database['public']['Enums']['user_funcao'] | null
+          id: string
+          is_etapa_ganho: boolean
+          modelo_id: string
+          nome: string
+          ordem: number
+          prazo_dias: number | null
+          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
+          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          equipe_id?: string | null
+          funcao?: Database['public']['Enums']['user_funcao'] | null
+          id?: string
+          is_etapa_ganho?: boolean
+          modelo_id: string
+          nome: string
+          ordem: number
+          prazo_dias?: number | null
+          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
+          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          equipe_id?: string | null
+          funcao?: Database['public']['Enums']['user_funcao'] | null
+          id?: string
+          is_etapa_ganho?: boolean
+          modelo_id?: string
+          nome?: string
+          ordem?: number
+          prazo_dias?: number | null
+          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
+          tipo?: Database['public']['Enums']['fluxo_etapa_tipo']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fluxo_etapas_equipe_id_fkey'
+            columns: ['equipe_id']
+            isOneToOne: false
+            referencedRelation: 'equipes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fluxo_etapas_modelo_id_fkey'
+            columns: ['modelo_id']
+            isOneToOne: false
+            referencedRelation: 'fluxo_modelos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      fluxo_modelos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          is_generico: boolean
+          nome: string
+          produto_id: string | null
+          seguradora_id: string | null
+          situacao: Database['public']['Enums']['fluxo_situacao']
+          updated_at: string
+          versao: number
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_generico?: boolean
+          nome: string
+          produto_id?: string | null
+          seguradora_id?: string | null
+          situacao?: Database['public']['Enums']['fluxo_situacao']
+          updated_at?: string
+          versao?: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          is_generico?: boolean
+          nome?: string
+          produto_id?: string | null
+          seguradora_id?: string | null
+          situacao?: Database['public']['Enums']['fluxo_situacao']
+          updated_at?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fluxo_modelos_produto_id_fkey'
+            columns: ['produto_id']
+            isOneToOne: false
+            referencedRelation: 'produtos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fluxo_modelos_seguradora_id_fkey'
+            columns: ['seguradora_id']
+            isOneToOne: false
+            referencedRelation: 'seguradoras_operadoras'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       motivos: {
         Row: {
           created_at: string
@@ -348,10 +512,15 @@ export type Database = {
       canal_cotacao: 'Portal' | 'Multicálculo' | 'E-mail' | 'WhatsApp'
       catalogo_frente: 'Seguros' | 'Saúde'
       catalogo_situacao: 'ativa' | 'inativa'
+      checklist_campo_formato: 'texto' | 'número' | 'valor' | 'data' | 'sim_nao' | 'opções'
+      checklist_item_tipo: 'Documento' | 'Informação' | 'Confirmação'
       cliente_porte: 'micro' | 'pequena' | 'média' | 'grande'
       cliente_situacao: 'ativo' | 'arquivado'
       cliente_tipo: 'PJ' | 'PF'
       contato_cargo_area: 'RH' | 'Financeiro' | 'Sócio' | 'Administrativo' | 'Outro'
+      fluxo_etapa_tipo: 'Trabalho interno' | 'Aguardando cliente' | 'Aguardando seguradora'
+      fluxo_responsavel_tipo: 'responsavel_comercial' | 'fila_equipe'
+      fluxo_situacao: 'ativo' | 'inativo'
       indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
       motivo_tipo: 'perda' | 'descarte' | 'adiamento'
       user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
@@ -485,10 +654,15 @@ export const Constants = {
       canal_cotacao: ['Portal', 'Multicálculo', 'E-mail', 'WhatsApp'],
       catalogo_frente: ['Seguros', 'Saúde'],
       catalogo_situacao: ['ativa', 'inativa'],
+      checklist_campo_formato: ['texto', 'número', 'valor', 'data', 'sim_nao', 'opções'],
+      checklist_item_tipo: ['Documento', 'Informação', 'Confirmação'],
       cliente_porte: ['micro', 'pequena', 'média', 'grande'],
       cliente_situacao: ['ativo', 'arquivado'],
       cliente_tipo: ['PJ', 'PF'],
       contato_cargo_area: ['RH', 'Financeiro', 'Sócio', 'Administrativo', 'Outro'],
+      fluxo_etapa_tipo: ['Trabalho interno', 'Aguardando cliente', 'Aguardando seguradora'],
+      fluxo_responsavel_tipo: ['responsavel_comercial', 'fila_equipe'],
+      fluxo_situacao: ['ativo', 'inativo'],
       indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
       motivo_tipo: ['perda', 'descarte', 'adiamento'],
       user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],

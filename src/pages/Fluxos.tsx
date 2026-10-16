@@ -708,9 +708,9 @@ export default function Fluxos() {
                                 <span className="font-semibold text-slate-800">
                                   {etapa.responsavel_tipo === 'responsavel_comercial'
                                     ? 'Responsável comercial da oportunidade'
-                                    : `Fila da equipe ${etapa.equipe_nome || ''} (${
+                                    : `Fila ${etapa.equipe_nome || ''} / ${
                                         etapa.funcao || 'Geral'
-                                      })`}
+                                      }`}
                                 </span>
                               </div>
 
@@ -753,11 +753,30 @@ export default function Fluxos() {
                                         <p className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
                                           {item.titulo}
                                         </p>
-                                        {item.tipo === 'Informação' && item.formato && (
-                                          <p className="text-[11px] text-slate-500 mt-0.5">
-                                            Campo de preenchimento obrigatório para avanço.
-                                          </p>
+                                        {item.opcoes && item.opcoes.length > 0 && (
+                                          <div className="flex items-center gap-1.5 flex-wrap mt-1 text-[11px] text-slate-600">
+                                            <span className="font-medium text-slate-400">
+                                              Opções:
+                                            </span>
+                                            {item.opcoes.map((opc, i) => (
+                                              <span
+                                                key={i}
+                                                className="inline-block bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200 font-mono text-[10px]"
+                                              >
+                                                {opc}
+                                              </span>
+                                            ))}
+                                          </div>
                                         )}
+                                        {item.tipo === 'Informação' &&
+                                          item.formato &&
+                                          !item.opcoes && (
+                                            <p className="text-[11px] text-slate-500 mt-0.5">
+                                              {item.obrigatorio
+                                                ? 'Campo de preenchimento obrigatório para avanço.'
+                                                : 'Campo informativo de preenchimento opcional.'}
+                                            </p>
+                                          )}
                                       </div>
                                     </div>
 
