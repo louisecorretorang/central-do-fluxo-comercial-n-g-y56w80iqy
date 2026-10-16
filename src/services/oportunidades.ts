@@ -714,99 +714,168 @@ export async function getDownloadAnexoUrl(
 }
 
 /**
- * Conclui a etapa atual e avança para a próxima etapa (se houver)
+ * Conclui a etapa atual e avança para a próxima etapa via RPC segura no servidor
  */
-export async function avancarEtapaOportunidade(params: {
+export async function concluirEtapaOportunidade(params: {
   oportunidade_id: string
   etapa_atual_id: string
-  etapas: OportunidadeEtapa[]
-  usuario_id: string
-}): Promise<{ success: boolean; proximaEtapaId: string | null; error: string | null }> {
+}): Promise<{
+  success: boolean
+  data?: {
+    sucesso: boolean
+    proxima_etapa_id: string | null
+    era_etapa_ganho: boolean
+    era_ultima_etapa: boolean
+  } | null
+  error: string | null
+}> {
   try {
-    const ordenadas = [...params.etapas].sort((a, b) => a.ordem - b.ordem)
-    const idxAtual = ordenadas.findIndex((e) => e.id === params.etapa_atual_id)
+    const { data, error } = await db.rpc('concluir_etapa_oportunidade', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_etapa_atual_id: params.etapa_atual_id,
+    })
 
-    if (idxAtual === -1) {
-      return { success: false, proximaEtapaId: null, error: 'Etapa atual não identificada.' }
+    if (error) {
+      console.error('Erro na RPC concluir_etapa_oportunidade:', error)
+      return { success: false, data: null, error: error.message }
     }
 
-    const etapaAtual = ordenadas[idxAtual]
-    const proximaEtapa = idxAtual + 1 < ordenadas.length ? ordenadas[idxAtual + 1] : null
-
-    const now = new Date().toISOString()
-
-    // 1. Marcar a etapa atual como concluida
-    const { error: errEtapaAtual } = await db
-      .from('oportunidades_etapas')
-      .update({
-        situacao: 'concluida',
-        concluida_em: now,
-        responsavel_usuario_id: etapaAtual.responsavel_usuario_id || params.usuario_id,
-      })
-      .eq('id', params.etapa_atual_id)
-
-    if (errEtapaAtual) {
-      console.error('Erro ao concluir etapa atual:', errEtapaAtual)
-      return { success: false, proximaEtapaId: null, error: errEtapaAtual.message }
-    }
-
-    // 2. Se houver próxima etapa, iniciá-la e atualizar etapa_atual_id
-    if (proximaEtapa) {
-      const { error: errProx } = await db
-        .from('oportunidades_etapas')
-        .update({
-          situacao: 'em_andamento',
-          iniciada_em: now,
-        })
-        .eq('id', proximaEtapa.id)
-
-      if (errProx) {
-        console.error('Erro ao iniciar próxima etapa:', errProx)
-        return { success: false, proximaEtapaId: null, error: errProx.message }
-      }
-
-      // Atualizar oportunidade
-      const { error: errOpp } = await db
-        .from('oportunidades')
-        .update({
-          etapa_atual_id: proximaEtapa.id,
-        })
-        .eq('id', params.oportunidade_id)
-
-      if (errOpp) {
-        console.error('Erro ao atualizar etapa_atual_id:', errOpp)
-        return { success: false, proximaEtapaId: null, error: errOpp.message }
-      }
-
-      // Linha do tempo
-      await registrarEventoLinhaTempo({
-        oportunidade_id: params.oportunidade_id,
-        tipo: 'etapa_concluida',
-        titulo: `Etapa concluída: "${etapaAtual.nome}"`,
-        descricao: `Etapa avançada para "${proximaEtapa.nome}".`,
-        usuario_id: params.usuario_id,
-        metadados: {
-          etapa_concluida_id: etapaAtual.id,
-          proxima_etapa_id: proximaEtapa.id,
-        },
-      })
-
-      return { success: true, proximaEtapaId: proximaEtapa.id, error: null }
-    } else {
-      // Era a última etapa
-      await registrarEventoLinhaTempo({
-        oportunidade_id: params.oportunidade_id,
-        tipo: 'etapa_concluida',
-        titulo: `Última etapa concluída: "${etapaAtual.nome}"`,
-        descricao: 'Todas as etapas do fluxo foram cumpridas.',
-        usuario_id: params.usuario_id,
-        metadados: { etapa_concluida_id: etapaAtual.id },
-      })
-
-      return { success: true, proximaEtapaId: null, error: null }
-    }
+    return { success: true, data, error: null }
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Falha ao avançar etapa.'
-    return { success: false, proximaEtapaId: null, error: msg }
+    const msg = err instanceof Error ? err.message : 'Falha ao concluir etapa.'
+    return { success: false, data: null, error: msg }
+  }
+}
+
+/**
+ * Usuário assume a responsabilidade de uma etapa em fila_equipe
+ */
+export async function assumirEtapaOportunidade(params: {
+  oportunidade_id: string
+  etapa_id: string
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.rpc('assumir_etapa_oportunidade', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_etapa_id: params.etapa_id,
+    })
+
+    if (error) {
+      console.error('Erro na RPC assumir_etapa_oportunidade:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao assumir etapa.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Volta a etapa atual para a etapa anterior com motivo obrigatório
+ */
+export async function voltarEtapaOportunidade(params: {
+  oportunidade_id: string
+  etapa_atual_id: string
+  motivo: string
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.rpc('voltar_etapa_oportunidade', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_etapa_atual_id: params.etapa_atual_id,
+      p_motivo: params.motivo.trim(),
+    })
+
+    if (error) {
+      console.error('Erro na RPC voltar_etapa_oportunidade:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao voltar etapa.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Confirma o fechamento na etapa de ganho (seguradora, valor fechado, proposta)
+ */
+export async function confirmarGanhoOportunidade(params: {
+  oportunidade_id: string
+  seguradora_id: string | null
+  valor_fechado: number
+  numero_proposta: string
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.rpc('confirmar_ganho_oportunidade', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_seguradora_id: params.seguradora_id,
+      p_valor_fechado: params.valor_fechado,
+      p_numero_proposta: params.numero_proposta,
+    })
+
+    if (error) {
+      console.error('Erro na RPC confirmar_ganho_oportunidade:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao confirmar fechamento.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Marca oportunidade como perdida com motivo do catálogo e observação opcional
+ */
+export async function marcarOportunidadePerdida(params: {
+  oportunidade_id: string
+  motivo_id: string
+  observacao?: string | null
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.rpc('marcar_oportunidade_perdida', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_motivo_id: params.motivo_id,
+      p_observacao: params.observacao?.trim() || null,
+    })
+
+    if (error) {
+      console.error('Erro na RPC marcar_oportunidade_perdida:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao marcar como perdida.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Arquiva a oportunidade (apenas Administrador e Gestor)
+ */
+export async function arquivarOportunidade(params: {
+  oportunidade_id: string
+  motivo?: string | null
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const { error } = await db.rpc('arquivar_oportunidade', {
+      p_oportunidade_id: params.oportunidade_id,
+      p_motivo: params.motivo?.trim() || null,
+    })
+
+    if (error) {
+      console.error('Erro na RPC arquivar_oportunidade:', error)
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao arquivar oportunidade.'
+    return { success: false, error: msg }
   }
 }

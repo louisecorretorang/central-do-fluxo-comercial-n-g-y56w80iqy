@@ -13,6 +13,8 @@ import {
   ExternalLink,
   ShieldCheck,
   RotateCw,
+  XCircle,
+  Archive,
 } from 'lucide-react'
 import { getOportunidadeById } from '@/services/oportunidades'
 import { OportunidadeDetalhe } from '@/types/oportunidades'
@@ -24,16 +26,28 @@ import { ChecklistEtapaAtual } from '@/components/oportunidades/ChecklistEtapaAt
 import { InteracoesCard } from '@/components/oportunidades/InteracoesCard'
 import { LinhaDoTempoCard } from '@/components/oportunidades/LinhaDoTempoCard'
 import { QuiverCard } from '@/components/oportunidades/QuiverCard'
+import { ModalVoltarEtapa } from '@/components/oportunidades/ModalVoltarEtapa'
+import { ModalConfirmarGanho } from '@/components/oportunidades/ModalConfirmarGanho'
+import { ModalMarcarPerdida } from '@/components/oportunidades/ModalMarcarPerdida'
+import { ModalArquivarOportunidade } from '@/components/oportunidades/ModalArquivarOportunidade'
+import { supabase } from '@/lib/supabase/client'
 
 export default function OportunidadeDetalhes() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, profile, userDisplayName } = useAuth()
+  const { user, profile, perfil, funcao, isAdmin, isGestor, userDisplayName } = useAuth()
 
   const [opp, setOpp] = useState<OportunidadeDetalhe | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [recarregando, setRecarregando] = useState(false)
+  const [userEquipeIds, setUserEquipeIds] = useState<string[]>([])
+
+  // Modais de movimento
+  const [modalVoltarAberto, setModalVoltarAberto] = useState(false)
+  const [modalGanhoAberto, setModalGanhoAberto] = useState(false)
+  const [modalPerdidaAberto, setModalPerdidaAberto] = useState(false)
+  const [modalArquivarAberto, setModalArquivarAberto] = useState(false)
 
   const fetchOportunidade = useCallback(
     async (silencioso = false) => {
@@ -62,6 +76,22 @@ export default function OportunidadeDetalhes() {
   useEffect(() => {
     fetchOportunidade()
   }, [fetchOportunidade])
+
+  // Carregar equipes do usuário autenticado para checar permissão em fila_equipe
+  useEffect(() => {
+    if (!user?.id) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client = supabase as any
+    client
+      .from('profile_equipes')
+      .select('equipe_id')
+      .eq('profile_id', user.id)
+      .then((res: any) => {
+        if (res.data) {
+          setUserEquipeIds(res.data.map((r: any) => r.equipe_id))
+        }
+      })
+  }, [user?.id])
 
   if (loading && !opp) {
     return (
@@ -97,10 +127,41 @@ export default function OportunidadeDetalhes() {
   const etapaAtual = opp.etapas.find((e) => e.id === opp.etapa_atual_id) || null
   const currentUserId = user?.id || '00000000-0000-0000-0000-000000000000'
 
+  // Identificar etapa anterior (para o modal de voltar etapa)
+  const etapasOrdenadas = [...opp.etapas].sort((a, b) => a.ordem - b.ordem)
+  const idxEtapaAtual = etapaAtual ? etapasOrdenadas.findIndex((e) => e.id === etapaAtual.id) : -1
+  const etapaAnterior = idxEtapaAtual > 0 ? etapasOrdenadas[idxEtapaAtual - 1] : null
+
+  // Regra de estados bloqueados de movimento (Perdida, Arquivada ou Concluída)
+  const bloqueadoMovimento =
+    opp.situacao === 'Perdida' || opp.situacao === 'Arquivada' || opp.situacao === 'Concluída'
+
+  // Perfil pode arquivar? Administrador ou Gestor
+  const podeArquivar = (isAdmin || isGestor) && opp.situacao !== 'Arquivada'
+
+  // Cor do badge de situação no topo
+  const getBadgeSituacaoClass = () => {
+    switch (opp.situacao) {
+      case 'Em andamento':
+        return 'bg-blue-50 text-blue-800 border-blue-200'
+      case 'Ganha — em finalização':
+        return 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
+      case 'Ganha':
+      case 'Concluída':
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      case 'Perdida':
+        return 'bg-rose-50 text-rose-800 border-rose-200'
+      case 'Arquivada':
+        return 'bg-slate-200 text-slate-800 border-slate-300'
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200'
+    }
+  }
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* ========================================================
-          BARRA DE TOPO COM VOLTAR E SITUAÇÃO
+          BARRA DE TOPO COM VOLTAR, SITUAÇÃO E AÇÕES
          ======================================================== */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
@@ -111,7 +172,7 @@ export default function OportunidadeDetalhes() {
           <span>Voltar para lista de oportunidades</span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {recarregando && (
             <span className="text-xs text-slate-400 flex items-center gap-1 animate-pulse">
               <RotateCw className="w-3.5 h-3.5 animate-spin text-teal-600" />
@@ -119,17 +180,35 @@ export default function OportunidadeDetalhes() {
             </span>
           )}
 
-          <Badge
-            className={`text-xs px-3 py-1 font-semibold border ${
-              opp.situacao === 'Em andamento'
-                ? 'bg-blue-50 text-blue-800 border-blue-200'
-                : opp.situacao === 'Ganha'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : 'bg-slate-100 text-slate-700 border-slate-200'
-            }`}
-          >
-            {opp.situacao}
+          <Badge className={`text-xs px-3 py-1 font-semibold border ${getBadgeSituacaoClass()}`}>
+            Situação: {opp.situacao}
           </Badge>
+
+          {/* Botão "Marcar como perdida" disponível enquanto em andamento / não finalizada */}
+          {opp.situacao === 'Em andamento' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setModalPerdidaAberto(true)}
+              className="h-8 px-3 rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 text-xs font-semibold btn-press shadow-2xs"
+            >
+              <XCircle className="w-3.5 h-3.5 mr-1 text-rose-600" />
+              Marcar como perdida
+            </Button>
+          )}
+
+          {/* Botão "Arquivar" restrito a Administrador e Gestor */}
+          {podeArquivar && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setModalArquivarAberto(true)}
+              className="h-8 px-3 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold btn-press shadow-2xs"
+            >
+              <Archive className="w-3.5 h-3.5 mr-1 text-slate-600" />
+              Arquivar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -307,7 +386,8 @@ export default function OportunidadeDetalhes() {
 
       {/* ========================================================
           CHECKLIST DA ETAPA ATUAL (Interativo, Anexos privados,
-          campos de Informação tipados, Confirmação, e Avançar)
+          campos de Informação tipados, Confirmação, Concluir etapa,
+          Voltar etapa e Assumir etapa em fila)
          ======================================================== */}
       <ChecklistEtapaAtual
         oportunidadeId={opp.id}
@@ -315,6 +395,12 @@ export default function OportunidadeDetalhes() {
         todasEtapas={opp.etapas}
         usuarioId={currentUserId}
         usuarioNome={userDisplayName}
+        userPerfil={perfil}
+        userFuncao={funcao}
+        userEquipeIds={userEquipeIds}
+        bloqueadoMovimento={bloqueadoMovimento}
+        onAbrirModalVoltar={() => setModalVoltarAberto(true)}
+        onAbrirModalGanho={() => setModalGanhoAberto(true)}
         onAtualizacao={() => fetchOportunidade(true)}
       />
 
@@ -333,6 +419,52 @@ export default function OportunidadeDetalhes() {
         {/* Linha do tempo completa */}
         <LinhaDoTempoCard timeline={opp.timeline} />
       </div>
+
+      {/* ========================================================
+          MODAIS DE MOVIMENTO
+         ======================================================== */}
+      {/* 1. Modal Voltar Etapa */}
+      {etapaAtual && etapaAnterior && (
+        <ModalVoltarEtapa
+          open={modalVoltarAberto}
+          onOpenChange={setModalVoltarAberto}
+          oportunidadeId={opp.id}
+          etapaAtualId={etapaAtual.id}
+          etapaAtualNome={etapaAtual.nome}
+          etapaAnteriorNome={etapaAnterior.nome}
+          onSucesso={() => fetchOportunidade(true)}
+        />
+      )}
+
+      {/* 2. Modal Confirmar Ganho */}
+      <ModalConfirmarGanho
+        open={modalGanhoAberto}
+        onOpenChange={setModalGanhoAberto}
+        oportunidadeId={opp.id}
+        protocolo={opp.protocolo}
+        seguradoraIdAtual={opp.seguradora_id}
+        valorEstimadoAtual={opp.valor_estimado}
+        numeroQuiverAtual={opp.numero_quiver}
+        onSucesso={() => fetchOportunidade(true)}
+      />
+
+      {/* 3. Modal Marcar Perdida */}
+      <ModalMarcarPerdida
+        open={modalPerdidaAberto}
+        onOpenChange={setModalPerdidaAberto}
+        oportunidadeId={opp.id}
+        protocolo={opp.protocolo}
+        onSucesso={() => fetchOportunidade(true)}
+      />
+
+      {/* 4. Modal Arquivar Oportunidade */}
+      <ModalArquivarOportunidade
+        open={modalArquivarAberto}
+        onOpenChange={setModalArquivarAberto}
+        oportunidadeId={opp.id}
+        protocolo={opp.protocolo}
+        onSucesso={() => fetchOportunidade(true)}
+      />
     </div>
   )
 }

@@ -5,7 +5,6 @@ import { useOpportunityModal } from '@/hooks/use-opportunity-modal'
 import NGLogo from '@/components/NGLogo'
 import NewOpportunityModal from '@/components/NewOpportunityModal'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   Inbox,
@@ -15,7 +14,6 @@ import {
   LayoutDashboard,
   Users2,
   Settings,
-  Bell,
   LogOut,
   Plus,
   Menu,
@@ -23,6 +21,7 @@ import {
   User as UserIcon,
   Sparkles,
 } from 'lucide-react'
+import { SinoNotificacoes } from '@/components/SinoNotificacoes'
 
 // Itens de navegação da Central do Fluxo Comercial N&G
 // Configurações e Usuários visíveis apenas para Administrador
@@ -349,32 +348,8 @@ export default function Layout() {
               <span>Nova oportunidade</span>
             </Button>
 
-            {/* Sino de Notificações com popover amigável */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="relative p-2 rounded-xl text-slate-500 hover:text-[#0C2D48] hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 btn-press"
-                  aria-label="Notificações"
-                >
-                  <Bell className="w-5 h-5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="end"
-                className="w-72 p-4 rounded-2xl shadow-lg border-slate-200"
-              >
-                <div className="text-center py-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-2">
-                    <Bell className="w-5 h-5" />
-                  </div>
-                  <h4 className="text-sm font-semibold text-[#0C2D48]">Nenhuma notificação</h4>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Você será avisado sobre atualizações na sua fila comercial.
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
+            {/* Sino de Notificações com popover funcional */}
+            <SinoNotificacoes />
 
             {/* Nome da pessoa logada (desktop) */}
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200 text-xs font-semibold text-slate-700 capitalize">

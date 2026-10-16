@@ -8,7 +8,15 @@ import {
 } from './fluxos'
 import { UserFuncao } from './usuarios'
 
-export type OportunidadeSituacao = 'Em andamento' | 'Ganha' | 'Perdida' | 'Descartada' | 'Adiada'
+export type OportunidadeSituacao =
+  | 'Em andamento'
+  | 'Ganha'
+  | 'Ganha — em finalização'
+  | 'Concluída'
+  | 'Perdida'
+  | 'Descartada'
+  | 'Adiada'
+  | 'Arquivada'
 
 export type EtapaOportunidadeSituacao = 'pendente' | 'em_andamento' | 'concluida'
 

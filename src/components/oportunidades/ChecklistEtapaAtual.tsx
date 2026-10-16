@@ -24,9 +24,11 @@ import {
   updateChecklistItem,
   uploadChecklistAnexo,
   getDownloadAnexoUrl,
-  avancarEtapaOportunidade,
+  concluirEtapaOportunidade,
+  assumirEtapaOportunidade,
 } from '@/services/oportunidades'
 import { formatDateBR, formatCurrencyBRL } from '@/components/NewOpportunityModal'
+import { UserPerfil, UserFuncao } from '@/types/usuarios'
 
 interface ChecklistEtapaAtualProps {
   oportunidadeId: string
@@ -34,6 +36,12 @@ interface ChecklistEtapaAtualProps {
   todasEtapas: OportunidadeEtapa[]
   usuarioId: string
   usuarioNome: string
+  userPerfil?: UserPerfil | null
+  userFuncao?: UserFuncao | null
+  userEquipeIds?: string[]
+  bloqueadoMovimento?: boolean
+  onAbrirModalVoltar?: () => void
+  onAbrirModalGanho?: () => void
   onAtualizacao: () => void
 }
 
@@ -50,12 +58,19 @@ export function ChecklistEtapaAtual({
   todasEtapas,
   usuarioId,
   usuarioNome,
+  userPerfil,
+  userFuncao,
+  userEquipeIds = [],
+  bloqueadoMovimento = false,
+  onAbrirModalVoltar,
+  onAbrirModalGanho,
   onAtualizacao,
 }: ChecklistEtapaAtualProps) {
   const [salvandoItemId, setSalvandoItemId] = useState<string | null>(null)
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null)
   const [baixandoItemId, setBaixandoItemId] = useState<string | null>(null)
-  const [avancando, setAvancando] = useState(false)
+  const [concluindo, setConcluindo] = useState(false)
+  const [assumindo, setAssumindo] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [sucesso, setSucesso] = useState<string | null>(null)
 
@@ -186,30 +201,70 @@ export function ChecklistEtapaAtual({
     }
   }
 
-  // Avançar etapa
-  const handleAvancarEtapa = async () => {
+  // Lista dos nomes dos itens que faltam preencher (se houver pendências)
+  const itensFaltantes = obrigatorios
+    .filter((i) => !obrigatoriosConcluidos.some((c) => c.id === i.id))
+    .map((i) => i.titulo)
+
+  // Checar se o usuário atual pode assumir esta etapa (quando em fila_equipe)
+  const podeAssumir =
+    etapaAtual &&
+    etapaAtual.responsavel_tipo === 'fila_equipe' &&
+    etapaAtual.responsavel_usuario_id !== usuarioId &&
+    (userPerfil === 'Administrador' ||
+      (etapaAtual.equipe_id &&
+        userEquipeIds.includes(etapaAtual.equipe_id) &&
+        (!etapaAtual.funcao || etapaAtual.funcao === userFuncao)))
+
+  const handleAssumirEtapa = async () => {
+    setAssumindo(true)
+    setErro(null)
+
+    const res = await assumirEtapaOportunidade({
+      oportunidade_id: oportunidadeId,
+      etapa_id: etapaAtual.id,
+    })
+
+    setAssumindo(false)
+    if (res.error) {
+      setErro(`Não foi possível assumir a etapa: ${res.error}`)
+    } else {
+      setSucesso('Você assumiu a responsabilidade desta etapa!')
+      setTimeout(() => setSucesso(null), 4000)
+      onAtualizacao()
+    }
+  }
+
+  // Concluir etapa atual
+  const handleConcluirEtapa = async () => {
     if (!todosObrigatoriosProntos) {
-      setErro('Por favor, preencha todos os itens obrigatórios (*) antes de avançar a etapa.')
+      setErro(`Falta preencher os seguintes itens obrigatórios: ${itensFaltantes.join(', ')}`)
       return
     }
 
-    setAvancando(true)
+    setConcluindo(true)
     setErro(null)
 
-    const res = await avancarEtapaOportunidade({
+    const res = await concluirEtapaOportunidade({
       oportunidade_id: oportunidadeId,
       etapa_atual_id: etapaAtual.id,
-      etapas: todasEtapas,
-      usuario_id: usuarioId,
     })
 
-    setAvancando(false)
+    setConcluindo(false)
     if (res.error) {
-      setErro(`Não foi possível avançar a etapa: ${res.error}`)
+      setErro(res.error)
     } else {
-      setSucesso('Etapa concluída e fluxo avançado com sucesso!')
-      setTimeout(() => setSucesso(null), 4000)
       onAtualizacao()
+      // Se era etapa de ganho, abre o modal de confirmação de ganho
+      if (res.data?.era_etapa_ganho && onAbrirModalGanho) {
+        onAbrirModalGanho()
+      } else if (res.data?.era_ultima_etapa) {
+        setSucesso('Última etapa concluída! Oportunidade finalizada com sucesso.')
+        setTimeout(() => setSucesso(null), 5000)
+      } else {
+        setSucesso('Etapa concluída e fluxo avançado com sucesso!')
+        setTimeout(() => setSucesso(null), 4000)
+      }
     }
   }
 
@@ -235,30 +290,71 @@ export function ChecklistEtapaAtual({
           </p>
         </div>
 
-        {/* Botão de Avanço de Etapa */}
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={handleAvancarEtapa}
-            disabled={avancando || !todosObrigatoriosProntos}
-            className={`h-10 px-4 rounded-xl text-xs font-bold transition-all shadow-xs btn-press ${
-              todosObrigatoriosProntos
-                ? 'bg-[#00A896] hover:bg-teal-700 text-white ring-2 ring-teal-500/30'
-                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-            }`}
-          >
-            {avancando ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
-                Avançando etapa...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                Concluir e avançar etapa
-              </>
-            )}
-          </Button>
+        {/* Ações da Etapa Atual: Assumir, Voltar e Concluir Etapa */}
+        <div className="flex flex-wrap items-center gap-2">
+          {podeAssumir && !bloqueadoMovimento && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAssumirEtapa}
+              disabled={assumindo}
+              className="h-10 px-3.5 rounded-xl border-teal-300 text-teal-800 bg-white hover:bg-teal-50 text-xs font-bold btn-press shadow-2xs"
+            >
+              {assumindo ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  Assumindo...
+                </>
+              ) : (
+                <>
+                  <User className="w-3.5 h-3.5 mr-1.5 text-teal-600" />
+                  Assumir etapa
+                </>
+              )}
+            </Button>
+          )}
+
+          {etapaAtual.ordem > 1 && onAbrirModalVoltar && !bloqueadoMovimento && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onAbrirModalVoltar}
+              disabled={concluindo || assumindo}
+              className="h-10 px-3 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold btn-press shadow-2xs"
+            >
+              Voltar etapa
+            </Button>
+          )}
+
+          {!bloqueadoMovimento && (
+            <Button
+              type="button"
+              onClick={handleConcluirEtapa}
+              disabled={concluindo}
+              className={`h-10 px-4 rounded-xl text-xs font-bold transition-all shadow-xs btn-press ${
+                todosObrigatoriosProntos
+                  ? 'bg-[#00A896] hover:bg-teal-700 text-white ring-2 ring-teal-500/30'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white'
+              }`}
+              title={
+                !todosObrigatoriosProntos
+                  ? `Falta preencher: ${itensFaltantes.join(', ')}`
+                  : 'Concluir esta etapa'
+              }
+            >
+              {concluindo ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                  Concluindo...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  Concluir etapa
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </CardHeader>
 
@@ -289,11 +385,11 @@ export function ChecklistEtapaAtual({
           {todosObrigatoriosProntos ? (
             <span className="text-emerald-700 font-semibold flex items-center gap-1">
               <CheckCircle2 className="w-4 h-4" />
-              Tudo pronto para avançar para a próxima etapa!
+              Tudo pronto para concluir a etapa!
             </span>
           ) : (
             <span className="text-amber-800 font-medium">
-              Ainda restam itens obrigatórios pendentes nesta fase
+              Falta preencher: <strong>{itensFaltantes.join(', ')}</strong>
             </span>
           )}
         </div>

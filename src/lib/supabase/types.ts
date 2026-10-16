@@ -350,6 +350,7 @@ export type Database = {
           fluxo_modelo_id: string
           fluxo_versao: number
           id: string
+          numero_quiver: string | null
           observacoes: string | null
           origem_id: string
           produto_id: string
@@ -371,6 +372,7 @@ export type Database = {
           fluxo_modelo_id: string
           fluxo_versao?: number
           id?: string
+          numero_quiver?: string | null
           observacoes?: string | null
           origem_id: string
           produto_id: string
@@ -392,6 +394,7 @@ export type Database = {
           fluxo_modelo_id?: string
           fluxo_versao?: number
           id?: string
+          numero_quiver?: string | null
           observacoes?: string | null
           origem_id?: string
           produto_id?: string
@@ -471,6 +474,9 @@ export type Database = {
       }
       oportunidades_checklist_itens: {
         Row: {
+          arquivo_nome: string | null
+          arquivo_tamanho: number | null
+          arquivo_url: string | null
           concluido: boolean
           concluido_em: string | null
           concluido_por: string | null
@@ -487,6 +493,9 @@ export type Database = {
           valor: string | null
         }
         Insert: {
+          arquivo_nome?: string | null
+          arquivo_tamanho?: number | null
+          arquivo_url?: string | null
           concluido?: boolean
           concluido_em?: string | null
           concluido_por?: string | null
@@ -503,6 +512,9 @@ export type Database = {
           valor?: string | null
         }
         Update: {
+          arquivo_nome?: string | null
+          arquivo_tamanho?: number | null
+          arquivo_url?: string | null
           concluido?: boolean
           concluido_em?: string | null
           concluido_por?: string | null
@@ -611,6 +623,102 @@ export type Database = {
           {
             foreignKeyName: 'oportunidades_etapas_responsavel_usuario_id_fkey'
             columns: ['responsavel_usuario_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      oportunidades_interacoes: {
+        Row: {
+          created_at: string
+          data_contato: string
+          id: string
+          oportunidade_id: string
+          registrado_por: string
+          resumo: string
+          tipo: Database['public']['Enums']['interacao_tipo']
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_contato?: string
+          id?: string
+          oportunidade_id: string
+          registrado_por: string
+          resumo: string
+          tipo: Database['public']['Enums']['interacao_tipo']
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_contato?: string
+          id?: string
+          oportunidade_id?: string
+          registrado_por?: string
+          resumo?: string
+          tipo?: Database['public']['Enums']['interacao_tipo']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'oportunidades_interacoes_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_interacoes_registrado_por_fkey'
+            columns: ['registrado_por']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      oportunidades_linha_tempo: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          metadados: Json | null
+          oportunidade_id: string
+          tipo: string
+          titulo: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadados?: Json | null
+          oportunidade_id: string
+          tipo: string
+          titulo: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadados?: Json | null
+          oportunidade_id?: string
+          tipo?: string
+          titulo?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'oportunidades_linha_tempo_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_linha_tempo_usuario_id_fkey'
+            columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -830,6 +938,7 @@ export type Database = {
       fluxo_responsavel_tipo: 'responsavel_comercial' | 'fila_equipe'
       fluxo_situacao: 'ativo' | 'inativo'
       indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
+      interacao_tipo: 'Ligação' | 'WhatsApp' | 'E-mail' | 'Reunião' | 'Outro'
       motivo_tipo: 'perda' | 'descarte' | 'adiamento'
       oportunidade_situacao: 'Em andamento' | 'Ganha' | 'Perdida' | 'Descartada' | 'Adiada'
       user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
@@ -974,6 +1083,7 @@ export const Constants = {
       fluxo_responsavel_tipo: ['responsavel_comercial', 'fila_equipe'],
       fluxo_situacao: ['ativo', 'inativo'],
       indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
+      interacao_tipo: ['Ligação', 'WhatsApp', 'E-mail', 'Reunião', 'Outro'],
       motivo_tipo: ['perda', 'descarte', 'adiamento'],
       oportunidade_situacao: ['Em andamento', 'Ganha', 'Perdida', 'Descartada', 'Adiada'],
       user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],

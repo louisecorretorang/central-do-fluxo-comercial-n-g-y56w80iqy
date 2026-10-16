@@ -69,7 +69,11 @@ export function TrilhaEtapas({
             if (etapa.responsavel_tipo === 'fila_equipe') {
               const eqNome = etapa.equipe_nome || equipePadraoNome || 'Equipe'
               const funcNome = etapa.funcao ? ` (${etapa.funcao})` : ''
-              respText = `Fila da equipe ${eqNome}${funcNome}`
+              if (etapa.responsavel_usuario_nome) {
+                respText = `${etapa.responsavel_usuario_nome} (Fila: ${eqNome}${funcNome})`
+              } else {
+                respText = `Fila da equipe ${eqNome}${funcNome} (Aguardando assumir)`
+              }
             }
 
             return (
