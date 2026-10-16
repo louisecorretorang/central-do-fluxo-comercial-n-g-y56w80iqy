@@ -154,6 +154,86 @@ export type Database = {
         }
         Relationships: []
       }
+      motivos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          tipo: Database['public']['Enums']['motivo_tipo']
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          tipo: Database['public']['Enums']['motivo_tipo']
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          tipo?: Database['public']['Enums']['motivo_tipo']
+        }
+        Relationships: []
+      }
+      origens_lead: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      produtos: {
+        Row: {
+          created_at: string
+          equipe_id: string | null
+          equipe_nome: string
+          frente: Database['public']['Enums']['catalogo_frente']
+          id: string
+          nome: string
+          situacao: Database['public']['Enums']['catalogo_situacao']
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipe_id?: string | null
+          equipe_nome: string
+          frente: Database['public']['Enums']['catalogo_frente']
+          id?: string
+          nome: string
+          situacao?: Database['public']['Enums']['catalogo_situacao']
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipe_id?: string | null
+          equipe_nome?: string
+          frente?: Database['public']['Enums']['catalogo_frente']
+          id?: string
+          nome?: string
+          situacao?: Database['public']['Enums']['catalogo_situacao']
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'produtos_equipe_id_fkey'
+            columns: ['equipe_id']
+            isOneToOne: false
+            referencedRelation: 'equipes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profile_equipes: {
         Row: {
           created_at: string
@@ -226,6 +306,36 @@ export type Database = {
         }
         Relationships: []
       }
+      seguradoras_operadoras: {
+        Row: {
+          canal_cotacao: Database['public']['Enums']['canal_cotacao']
+          created_at: string
+          frente: Database['public']['Enums']['catalogo_frente']
+          id: string
+          nome: string
+          situacao: Database['public']['Enums']['catalogo_situacao']
+          updated_at: string
+        }
+        Insert: {
+          canal_cotacao: Database['public']['Enums']['canal_cotacao']
+          created_at?: string
+          frente: Database['public']['Enums']['catalogo_frente']
+          id?: string
+          nome: string
+          situacao?: Database['public']['Enums']['catalogo_situacao']
+          updated_at?: string
+        }
+        Update: {
+          canal_cotacao?: Database['public']['Enums']['canal_cotacao']
+          created_at?: string
+          frente?: Database['public']['Enums']['catalogo_frente']
+          id?: string
+          nome?: string
+          situacao?: Database['public']['Enums']['catalogo_situacao']
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -235,11 +345,15 @@ export type Database = {
       is_admin: { Args: { user_uid: string }; Returns: boolean }
     }
     Enums: {
+      canal_cotacao: 'Portal' | 'Multicálculo' | 'E-mail' | 'WhatsApp'
+      catalogo_frente: 'Seguros' | 'Saúde'
+      catalogo_situacao: 'ativa' | 'inativa'
       cliente_porte: 'micro' | 'pequena' | 'média' | 'grande'
       cliente_situacao: 'ativo' | 'arquivado'
       cliente_tipo: 'PJ' | 'PF'
       contato_cargo_area: 'RH' | 'Financeiro' | 'Sócio' | 'Administrativo' | 'Outro'
       indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
+      motivo_tipo: 'perda' | 'descarte' | 'adiamento'
       user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
       user_perfil: 'Administrador' | 'Gestor' | 'Colaborador'
       user_situacao: 'ativo' | 'inativo'
@@ -368,11 +482,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      canal_cotacao: ['Portal', 'Multicálculo', 'E-mail', 'WhatsApp'],
+      catalogo_frente: ['Seguros', 'Saúde'],
+      catalogo_situacao: ['ativa', 'inativa'],
       cliente_porte: ['micro', 'pequena', 'média', 'grande'],
       cliente_situacao: ['ativo', 'arquivado'],
       cliente_tipo: ['PJ', 'PF'],
       contato_cargo_area: ['RH', 'Financeiro', 'Sócio', 'Administrativo', 'Outro'],
       indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
+      motivo_tipo: ['perda', 'descarte', 'adiamento'],
       user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],
       user_perfil: ['Administrador', 'Gestor', 'Colaborador'],
       user_situacao: ['ativo', 'inativo'],

@@ -21,6 +21,7 @@ import ClienteDetalhes from './pages/ClienteDetalhes'
 import Painel from './pages/Painel'
 import Usuarios from './pages/Usuarios'
 import Catalogo from './pages/Catalogo'
+import Fluxos from './pages/Fluxos'
 
 const App = () => (
   <BrowserRouter>
@@ -45,10 +46,11 @@ const App = () => (
                 {/* Rotas restritas a Administrador */}
                 <Route element={<AdminRoute />}>
                   <Route path="/usuarios" element={<Usuarios />} />
+                  <Route path="/configuracoes/fluxos" element={<Fluxos />} />
                   <Route path="/configuracoes/catalogo" element={<Catalogo />} />
                   <Route
                     path="/configuracoes"
-                    element={<Navigate to="/configuracoes/catalogo" replace />}
+                    element={<Navigate to="/configuracoes/fluxos" replace />}
                   />
                 </Route>
               </Route>

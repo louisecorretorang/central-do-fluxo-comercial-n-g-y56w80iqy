@@ -33,7 +33,20 @@ const NAV_ITEMS = [
   { path: '/clientes', label: 'Clientes', icon: Building2 },
   { path: '/painel', label: 'Painel', icon: LayoutDashboard },
   { path: '/usuarios', label: 'Usuários', icon: Users2, adminOnly: true },
-  { path: '/configuracoes/catalogo', label: 'Configurações', icon: Settings, adminOnly: true },
+  {
+    path: '/configuracoes/fluxos',
+    label: 'Fluxos',
+    icon: Sparkles,
+    adminOnly: true,
+    section: 'Configurações',
+  },
+  {
+    path: '/configuracoes/catalogo',
+    label: 'Catálogo',
+    icon: Settings,
+    adminOnly: true,
+    section: 'Configurações',
+  },
 ]
 
 export default function Layout() {
@@ -63,8 +76,14 @@ export default function Layout() {
     if (location.pathname.startsWith('/clientes/')) {
       return 'Ficha do Cliente'
     }
-    if (location.pathname.startsWith('/configuracoes')) {
+    if (location.pathname.startsWith('/configuracoes/fluxos')) {
+      return 'Configurações > Fluxos'
+    }
+    if (location.pathname.startsWith('/configuracoes/catalogo')) {
       return 'Configurações > Catálogo'
+    }
+    if (location.pathname.startsWith('/configuracoes')) {
+      return 'Configurações'
     }
     const item = NAV_ITEMS.find((n) => n.path === location.pathname)
     return item ? item.label : 'Central do Fluxo Comercial'
@@ -100,36 +119,71 @@ export default function Layout() {
           <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Navegação Principal
           </div>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive =
-              location.pathname === item.path ||
-              (item.path === '/clientes' && location.pathname.startsWith('/clientes/')) ||
-              (item.path === '/configuracoes/catalogo' &&
-                location.pathname.startsWith('/configuracoes'))
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative ${
-                  isActive
-                    ? 'bg-[#14375f] text-white font-semibold shadow-inner'
-                    : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
-                }`}
-              >
-                {/* Barra lateral colorida do item ativo */}
-                {isActive && (
-                  <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-teal-400" />
-                )}
-                <Icon
-                  className={`w-4 h-4 transition-colors ${
-                    isActive ? 'text-teal-400' : 'text-slate-400 group-hover:text-teal-300'
+          {navItems
+            .filter((item) => !('section' in item))
+            .map((item) => {
+              const Icon = item.icon
+              const isActive =
+                location.pathname === item.path ||
+                (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative ${
+                    isActive
+                      ? 'bg-[#14375f] text-white font-semibold shadow-inner'
+                      : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
                   }`}
-                />
-                <span className="truncate">{item.label}</span>
-              </NavLink>
-            )
-          })}
+                >
+                  {isActive && (
+                    <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-teal-400" />
+                  )}
+                  <Icon
+                    className={`w-4 h-4 transition-colors ${
+                      isActive ? 'text-teal-400' : 'text-slate-400 group-hover:text-teal-300'
+                    }`}
+                  />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              )
+            })}
+
+          {isAdmin && (
+            <>
+              <div className="pt-3 px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span>Configurações</span>
+                <span className="text-[10px] text-teal-400/80 font-normal">Admin</span>
+              </div>
+              {navItems
+                .filter((item) => 'section' in item)
+                .map((item) => {
+                  const Icon = item.icon
+                  const isActive = location.pathname.startsWith(item.path)
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative ${
+                        isActive
+                          ? 'bg-[#14375f] text-white font-semibold shadow-inner'
+                          : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
+                      }`}
+                    >
+                      {isActive && (
+                        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-teal-400" />
+                      )}
+                      <Icon
+                        className={`w-4 h-4 transition-colors ${
+                          isActive ? 'text-teal-400' : 'text-slate-400 group-hover:text-teal-300'
+                        }`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </NavLink>
+                  )
+                })}
+            </>
+          )}
         </nav>
 
         {/* Rodapé da Sidebar */}
@@ -176,29 +230,63 @@ export default function Layout() {
           </SheetHeader>
 
           <nav className="p-3 space-y-1.5 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive =
-                location.pathname === item.path ||
-                (item.path === '/clientes' && location.pathname.startsWith('/clientes/')) ||
-                (item.path === '/configuracoes/catalogo' &&
-                  location.pathname.startsWith('/configuracoes'))
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-[#14375f] text-white font-semibold'
-                      : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </NavLink>
-              )
-            })}
+            <div className="px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Navegação
+            </div>
+            {navItems
+              .filter((item) => !('section' in item))
+              .map((item) => {
+                const Icon = item.icon
+                const isActive =
+                  location.pathname === item.path ||
+                  (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-[#14375f] text-white font-semibold'
+                        : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`} />
+                    <span>{item.label}</span>
+                  </NavLink>
+                )
+              })}
+
+            {isAdmin && (
+              <>
+                <div className="pt-3 px-3 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Configurações
+                </div>
+                {navItems
+                  .filter((item) => 'section' in item)
+                  .map((item) => {
+                    const Icon = item.icon
+                    const isActive = location.pathname.startsWith(item.path)
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-[#14375f] text-white font-semibold'
+                            : 'text-slate-300 hover:text-white hover:bg-[#112d50]'
+                        }`}
+                      >
+                        <Icon
+                          className={`w-4 h-4 ${isActive ? 'text-teal-400' : 'text-slate-400'}`}
+                        />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    )
+                  })}
+              </>
+            )}
           </nav>
 
           <div className="p-4 border-t border-[#15345a] mt-auto bg-[#08182d]">
