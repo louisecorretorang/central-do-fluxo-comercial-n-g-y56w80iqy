@@ -14,6 +14,7 @@ import {
   Building2,
   LayoutDashboard,
   Users2,
+  Settings,
   Bell,
   LogOut,
   Plus,
@@ -23,14 +24,16 @@ import {
   Sparkles,
 } from 'lucide-react'
 
-// Ordem exata pedida: Minha fila, Oportunidades, Quadro, Clientes, Painel e Usuários
+// Itens de navegação da Central do Fluxo Comercial N&G
+// Configurações e Usuários visíveis apenas para Administrador
 const NAV_ITEMS = [
   { path: '/minha-fila', label: 'Minha fila', icon: Inbox },
   { path: '/oportunidades', label: 'Oportunidades', icon: Briefcase },
   { path: '/quadro', label: 'Quadro', icon: KanbanSquare },
   { path: '/clientes', label: 'Clientes', icon: Building2 },
   { path: '/painel', label: 'Painel', icon: LayoutDashboard },
-  { path: '/usuarios', label: 'Usuários', icon: Users2 },
+  { path: '/usuarios', label: 'Usuários', icon: Users2, adminOnly: true },
+  { path: '/configuracoes/catalogo', label: 'Configurações', icon: Settings, adminOnly: true },
 ]
 
 export default function Layout() {
@@ -41,9 +44,9 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // O item "Usuários" só aparece no menu para Administrador
+  // Os itens "Usuários" e "Configurações" só aparecem no menu para Administrador
   const navItems = NAV_ITEMS.filter((item) => {
-    if (item.path === '/usuarios') {
+    if (item.adminOnly) {
       return isAdmin
     }
     return true
@@ -59,6 +62,9 @@ export default function Layout() {
   const getPageTitle = () => {
     if (location.pathname.startsWith('/clientes/')) {
       return 'Ficha do Cliente'
+    }
+    if (location.pathname.startsWith('/configuracoes')) {
+      return 'Configurações > Catálogo'
     }
     const item = NAV_ITEMS.find((n) => n.path === location.pathname)
     return item ? item.label : 'Central do Fluxo Comercial'
@@ -98,7 +104,9 @@ export default function Layout() {
             const Icon = item.icon
             const isActive =
               location.pathname === item.path ||
-              (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
+              (item.path === '/clientes' && location.pathname.startsWith('/clientes/')) ||
+              (item.path === '/configuracoes/catalogo' &&
+                location.pathname.startsWith('/configuracoes'))
             return (
               <NavLink
                 key={item.path}
@@ -172,7 +180,9 @@ export default function Layout() {
               const Icon = item.icon
               const isActive =
                 location.pathname === item.path ||
-                (item.path === '/clientes' && location.pathname.startsWith('/clientes/'))
+                (item.path === '/clientes' && location.pathname.startsWith('/clientes/')) ||
+                (item.path === '/configuracoes/catalogo' &&
+                  location.pathname.startsWith('/configuracoes'))
               return (
                 <NavLink
                   key={item.path}

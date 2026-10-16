@@ -20,6 +20,7 @@ import Clientes from './pages/Clientes'
 import ClienteDetalhes from './pages/ClienteDetalhes'
 import Painel from './pages/Painel'
 import Usuarios from './pages/Usuarios'
+import Catalogo from './pages/Catalogo'
 
 const App = () => (
   <BrowserRouter>
@@ -41,9 +42,14 @@ const App = () => (
                 <Route path="/clientes" element={<Clientes />} />
                 <Route path="/clientes/:id" element={<ClienteDetalhes />} />
                 <Route path="/painel" element={<Painel />} />
-                {/* Rota restrita a Administrador */}
+                {/* Rotas restritas a Administrador */}
                 <Route element={<AdminRoute />}>
                   <Route path="/usuarios" element={<Usuarios />} />
+                  <Route path="/configuracoes/catalogo" element={<Catalogo />} />
+                  <Route
+                    path="/configuracoes"
+                    element={<Navigate to="/configuracoes/catalogo" replace />}
+                  />
                 </Route>
               </Route>
             </Route>

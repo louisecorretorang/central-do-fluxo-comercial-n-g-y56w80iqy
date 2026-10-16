@@ -28,6 +28,8 @@ import {
   IndicadoPorTipo,
 } from '@/types/clientes'
 import { createCliente, updateCliente, getResponsaveisComerciais } from '@/services/clientes'
+import { getOrigensLead } from '@/services/catalogo'
+import { OrigemLead } from '@/types/catalogo'
 import {
   formatCNPJ,
   formatCPF,
@@ -80,15 +82,19 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
 
   // Estados da interface
   const [responsaveis, setResponsaveis] = useState<{ id: string; nome: string }[]>([])
+  const [origensLeadList, setOrigensLeadList] = useState<OrigemLead[]>([])
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [duplicateCliente, setDuplicateCliente] = useState<Cliente | null>(null)
 
-  // Carregar lista de responsáveis comerciais
+  // Carregar lista de responsáveis comerciais e origens de lead cadastradas
   useEffect(() => {
     if (open) {
       getResponsaveisComerciais().then((res) => {
         if (res.data) setResponsaveis(res.data)
+      })
+      getOrigensLead().then((res) => {
+        if (res.data) setOrigensLeadList(res.data)
       })
     }
   }, [open])
@@ -681,16 +687,27 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* Origem */}
               <div className="space-y-1.5">
-                <Label htmlFor="cli-origem" className="text-xs font-semibold text-slate-700">
-                  Origem do cliente
-                </Label>
-                <Input
-                  id="cli-origem"
-                  placeholder="Ex.: Site N&G, Google, Telefone, Feira..."
-                  value={origem}
-                  onChange={(e) => setOrigem(e.target.value)}
-                  className="h-10 rounded-xl text-sm border-slate-200"
-                />
+                <Label className="text-xs font-semibold text-slate-700">Origem do cliente</Label>
+                <Select
+                  value={origem || 'none'}
+                  onValueChange={(val) => setOrigem(val === 'none' ? '' : val)}
+                >
+                  <SelectTrigger className="h-10 rounded-xl text-sm border-slate-200">
+                    <SelectValue placeholder="Selecione a origem do lead" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não informada</SelectItem>
+                    {/* Se o cliente já tinha uma origem que não está no catálogo, preserva exibindo-a */}
+                    {origem && !origensLeadList.some((o) => o.nome === origem) && (
+                      <SelectItem value={origem}>{origem}</SelectItem>
+                    )}
+                    {origensLeadList.map((origemItem) => (
+                      <SelectItem key={origemItem.id} value={origemItem.nome}>
+                        {origemItem.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Responsável Comercial */}
