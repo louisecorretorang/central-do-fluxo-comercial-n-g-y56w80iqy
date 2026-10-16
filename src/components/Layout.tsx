@@ -34,12 +34,20 @@ const NAV_ITEMS = [
 ]
 
 export default function Layout() {
-  const { userDisplayName, signOut } = useAuth()
+  const { userDisplayName, signOut, perfil, isAdmin } = useAuth()
   const { isOpen, openModal, closeModal, setIsOpen } = useOpportunityModal()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+
+  // O item "Usuários" só aparece no menu para Administrador
+  const navItems = NAV_ITEMS.filter((item) => {
+    if (item.path === '/usuarios') {
+      return isAdmin
+    }
+    return true
+  })
 
   const handleSignOut = async () => {
     setIsLoggingOut(true)
@@ -83,7 +91,7 @@ export default function Layout() {
           <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
             Navegação Principal
           </div>
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location.pathname === item.path
             return (
@@ -121,7 +129,9 @@ export default function Layout() {
               <p className="text-xs font-medium text-white truncate capitalize">
                 {userDisplayName}
               </p>
-              <p className="text-[10px] text-teal-300/80 truncate">Comercial N&amp;G</p>
+              <p className="text-[10px] text-teal-300/80 truncate font-medium">
+                {perfil || 'Comercial N&G'}
+              </p>
             </div>
           </div>
         </div>
@@ -153,7 +163,7 @@ export default function Layout() {
           </SheetHeader>
 
           <nav className="p-3 space-y-1.5 overflow-y-auto">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
               return (

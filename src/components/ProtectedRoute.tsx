@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import NGLogo from '@/components/NGLogo'
 
 export const ProtectedRoute: React.FC = () => {
-  const { session, loading } = useAuth()
+  const { session, loading, situacao } = useAuth()
 
   if (loading) {
     return (
@@ -22,6 +22,11 @@ export const ProtectedRoute: React.FC = () => {
   }
 
   if (!session) {
+    return <Navigate to="/" replace />
+  }
+
+  // Se o usuário estiver inativo, não consegue usar o sistema
+  if (situacao === 'inativo') {
     return <Navigate to="/" replace />
   }
 

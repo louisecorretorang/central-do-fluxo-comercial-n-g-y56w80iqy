@@ -76,22 +76,32 @@ export default function Index() {
     try {
       const { error } = await signIn(trimmedEmail, password)
       if (error) {
-        if (
-          error.message.includes('Invalid login credentials') ||
-          error.message.includes('invalid_grant') ||
-          error.status === 400
+        if (error.message?.includes('conta está inativa') || error.message?.includes('inativa')) {
+          setErrorMessage('Sua conta está inativa. Fale com um administrador.')
+        } else if (
+          error.message?.includes('Invalid login credentials') ||
+          error.message?.includes('invalid_grant') ||
+          ('status' in error && (error as { status?: number }).status === 400)
         ) {
           setErrorMessage('E-mail ou senha incorretos.')
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
+        } else if (
+          error.message?.includes('Failed to fetch') ||
+          error.message?.includes('Network')
+        ) {
           setErrorMessage('Não foi possível conectar. Tente novamente.')
         } else {
-          setErrorMessage('E-mail ou senha incorretos.')
+          setErrorMessage(error.message || 'E-mail ou senha incorretos.')
         }
       } else {
         navigate('/minha-fila', { replace: true })
       }
-    } catch {
-      setErrorMessage('Não foi possível conectar. Tente novamente.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : ''
+      if (msg.includes('inativa')) {
+        setErrorMessage('Sua conta está inativa. Fale com um administrador.')
+      } else {
+        setErrorMessage('Não foi possível conectar. Tente novamente.')
+      }
     } finally {
       setIsSubmitting(false)
     }

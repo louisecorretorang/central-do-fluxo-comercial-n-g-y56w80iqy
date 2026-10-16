@@ -10,6 +10,7 @@ import Index from './pages/Index'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 
 // Páginas reais da Central do Fluxo Comercial
 import MinhaFila from './pages/MinhaFila'
@@ -38,7 +39,10 @@ const App = () => (
                 <Route path="/quadro" element={<Quadro />} />
                 <Route path="/clientes" element={<Clientes />} />
                 <Route path="/painel" element={<Painel />} />
-                <Route path="/usuarios" element={<Usuarios />} />
+                {/* Rota restrita a Administrador */}
+                <Route element={<AdminRoute />}>
+                  <Route path="/usuarios" element={<Usuarios />} />
+                </Route>
               </Route>
             </Route>
 
