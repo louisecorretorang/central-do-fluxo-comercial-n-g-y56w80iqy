@@ -30,16 +30,17 @@ export interface ProdutoCatalogo {
 export interface OrigemLead {
   id: string
   nome: string
-  created_at: string
+  situacao: CatalogoSituacao
+  created_at?: string
 }
 
 export interface MotivoCatalogo {
   id: string
   nome: string
   tipo: MotivoTipo
-  created_at: string
+  situacao: CatalogoSituacao
+  created_at?: string
 }
-
 export interface CatalogoData {
   seguradoras: SeguradoraOperadora[]
   produtos: ProdutoCatalogo[]

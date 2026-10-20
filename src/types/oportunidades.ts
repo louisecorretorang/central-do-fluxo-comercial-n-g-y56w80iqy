@@ -56,6 +56,19 @@ export interface OportunidadeTimelineItem {
   created_at: string
 }
 
+export interface OportunidadeDocumento {
+  id: string
+  oportunidade_id: string
+  checklist_item_id: string
+  arquivo_nome: string
+  arquivo_caminho: string
+  arquivo_tamanho: number | null
+  enviado_por: string | null
+  enviado_por_nome?: string | null
+  enviado_em: string
+  created_at: string
+}
+
 export interface OportunidadeChecklistItem {
   id: string
   etapa_oportunidade_id: string
@@ -69,6 +82,7 @@ export interface OportunidadeChecklistItem {
   arquivo_nome?: string | null
   arquivo_url?: string | null
   arquivo_tamanho?: number | null
+  documentos?: OportunidadeDocumento[]
   concluido: boolean
   concluido_por?: string | null
   concluido_por_nome?: string | null
@@ -90,6 +104,8 @@ export interface OportunidadeEtapa {
   funcao?: UserFuncao | null
   responsavel_usuario_id?: string | null
   responsavel_usuario_nome?: string | null
+  concluida_por_id?: string | null
+  concluida_por_nome?: string | null
   prazo_dias?: number | null
   is_etapa_ganho: boolean
   situacao: EtapaOportunidadeSituacao
@@ -122,6 +138,10 @@ export interface OportunidadeResumo {
   origem_id: string
   origem_nome: string
   valor_estimado: number
+  valor_fechado?: number | null
+  motivo_perda_id?: string | null
+  motivo_perda_nome?: string | null
+  observacao_perda?: string | null
   data_prevista_fechamento: string
   observacoes?: string | null
   situacao: OportunidadeSituacao

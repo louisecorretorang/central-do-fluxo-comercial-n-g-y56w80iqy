@@ -247,6 +247,9 @@ export async function getOportunidadeById(
         responsavel_comercial_id,
         origem_id,
         valor_estimado,
+        valor_fechado,
+        motivo_perda_id,
+        observacao_perda,
         data_prevista_fechamento,
         observacoes,
         situacao,
@@ -261,6 +264,7 @@ export async function getOportunidadeById(
         responsavel:profiles!responsavel_comercial_id(id, nome, email),
         criador:profiles!criado_por(id, nome, email),
         origem:origens_lead(id, nome),
+        motivo_perda:motivos!motivo_perda_id(id, nome),
         equipe:equipes(id, nome),
         etapa_atual:oportunidades_etapas!etapa_atual_id(id, nome, ordem, situacao, concluida_em, responsavel_usuario_id)
       `)
@@ -286,6 +290,7 @@ export async function getOportunidadeById(
         equipe_id,
         funcao,
         responsavel_usuario_id,
+        concluida_por_id,
         prazo_dias,
         is_etapa_ganho,
         situacao,
@@ -294,7 +299,8 @@ export async function getOportunidadeById(
         created_at,
         updated_at,
         equipe:equipes(id, nome),
-        responsavel_usuario:profiles!responsavel_usuario_id(id, nome, email)
+        responsavel_usuario:profiles!responsavel_usuario_id(id, nome, email),
+        concluido_por_usuario:profiles!concluida_por_id(id, nome, email)
       `)
       .eq('oportunidade_id', id)
       .order('ordem', { ascending: true })
@@ -304,28 +310,71 @@ export async function getOportunidadeById(
       return { data: null, error: etapasError.message }
     }
 
-    // Buscar itens de checklist de todas as etapas desta oportunidade
+    // Buscar itens de checklist de todas as etapas desta oportunidade e documentos
     const etapaIds = (etapasData || []).map((e: any) => e.id)
     let checklistMap: Record<string, OportunidadeChecklistItem[]> = {}
 
     if (etapaIds.length > 0) {
-      const { data: itensData, error: itensError } = await db
-        .from('oportunidades_checklist_itens')
-        .select(`
-          *,
-          concluido_usuario:profiles!concluido_por(id, nome)
-        `)
-        .in('etapa_oportunidade_id', etapaIds)
-        .order('ordem', { ascending: true })
+      const [itensRes, docsRes] = await Promise.all([
+        db
+          .from('oportunidades_checklist_itens')
+          .select(`
+            *,
+            concluido_usuario:profiles!concluido_por(id, nome)
+          `)
+          .in('etapa_oportunidade_id', etapaIds)
+          .order('ordem', { ascending: true }),
+        db
+          .from('oportunidades_documentos')
+          .select(`
+            id,
+            oportunidade_id,
+            checklist_item_id,
+            arquivo_nome,
+            arquivo_caminho,
+            arquivo_tamanho,
+            enviado_por,
+            enviado_em,
+            created_at,
+            enviado_usuario:profiles!enviado_por(id, nome)
+          `)
+          .eq('oportunidade_id', id)
+          .order('created_at', { ascending: true }),
+      ])
 
-      if (itensError) {
-        console.error('Erro ao buscar checklist:', itensError)
+      const itensData = itensRes.data
+      const docsData = docsRes.data
+
+      const docsByItem: Record<string, any[]> = {}
+      if (docsData) {
+        for (const doc of docsData as any[]) {
+          if (!docsByItem[doc.checklist_item_id]) {
+            docsByItem[doc.checklist_item_id] = []
+          }
+          docsByItem[doc.checklist_item_id].push({
+            id: doc.id,
+            oportunidade_id: doc.oportunidade_id,
+            checklist_item_id: doc.checklist_item_id,
+            arquivo_nome: doc.arquivo_nome,
+            arquivo_caminho: doc.arquivo_caminho,
+            arquivo_tamanho: doc.arquivo_tamanho,
+            enviado_por: doc.enviado_por,
+            enviado_por_nome: doc.enviado_usuario?.nome || null,
+            enviado_em: doc.enviado_em,
+            created_at: doc.created_at,
+          })
+        }
+      }
+
+      if (itensRes.error) {
+        console.error('Erro ao buscar checklist:', itensRes.error)
       } else if (itensData) {
         checklistMap = (itensData as any[]).reduce(
           (acc, item) => {
             if (!acc[item.etapa_oportunidade_id]) {
               acc[item.etapa_oportunidade_id] = []
             }
+            const itemDocs = docsByItem[item.id] || []
             acc[item.etapa_oportunidade_id].push({
               id: item.id,
               etapa_oportunidade_id: item.etapa_oportunidade_id,
@@ -336,10 +385,21 @@ export async function getOportunidadeById(
               opcoes: item.opcoes,
               obrigatorio: item.obrigatorio,
               valor: item.valor,
-              arquivo_nome: item.arquivo_nome,
-              arquivo_url: item.arquivo_url,
-              arquivo_tamanho: item.arquivo_tamanho,
-              concluido: item.concluido,
+              arquivo_nome:
+                itemDocs.length > 0
+                  ? itemDocs[itemDocs.length - 1].arquivo_nome
+                  : item.arquivo_nome,
+              arquivo_url:
+                itemDocs.length > 0
+                  ? itemDocs[itemDocs.length - 1].arquivo_caminho
+                  : item.arquivo_url,
+              arquivo_tamanho:
+                itemDocs.length > 0
+                  ? itemDocs[itemDocs.length - 1].arquivo_tamanho
+                  : item.arquivo_tamanho,
+              documentos: itemDocs,
+              concluido:
+                item.tipo === 'Documento' ? itemDocs.length > 0 || item.concluido : item.concluido,
               concluido_por: item.concluido_por,
               concluido_por_nome: item.concluido_usuario?.nome || null,
               concluido_em: item.concluido_em,
@@ -366,6 +426,8 @@ export async function getOportunidadeById(
       funcao: e.funcao,
       responsavel_usuario_id: e.responsavel_usuario_id,
       responsavel_usuario_nome: e.responsavel_usuario?.nome || null,
+      concluida_por_id: e.concluida_por_id,
+      concluida_por_nome: e.concluido_por_usuario?.nome || null,
       prazo_dias: e.prazo_dias,
       is_etapa_ganho: Boolean(e.is_etapa_ganho),
       situacao: e.situacao,
@@ -471,6 +533,13 @@ export async function getOportunidadeById(
       origem_id: opp.origem_id,
       origem_nome: opp.origem?.nome || 'Origem não informada',
       valor_estimado: Number(opp.valor_estimado || 0),
+      valor_fechado:
+        opp.valor_fechado !== null && opp.valor_fechado !== undefined
+          ? Number(opp.valor_fechado)
+          : null,
+      motivo_perda_id: opp.motivo_perda_id || null,
+      motivo_perda_nome: (opp as any).motivo_perda?.nome || null,
+      observacao_perda: opp.observacao_perda || null,
       data_prevista_fechamento: opp.data_prevista_fechamento,
       observacoes: opp.observacoes,
       situacao: opp.situacao,
@@ -713,6 +782,24 @@ export async function uploadChecklistAnexo(params: {
     }
 
     const now = new Date().toISOString()
+
+    // 1. Inserir documento na nova tabela oportunidades_documentos (adiciona novo arquivo, nunca substitui)
+    const { error: docInsertErr } = await db.from('oportunidades_documentos').insert({
+      oportunidade_id: params.oportunidade_id,
+      checklist_item_id: params.item_id,
+      arquivo_nome: params.file.name,
+      arquivo_caminho: filePath,
+      arquivo_tamanho: params.file.size,
+      enviado_por: params.usuario_id,
+      enviado_em: now,
+    })
+
+    if (docInsertErr) {
+      console.error('Erro ao inserir em oportunidades_documentos:', docInsertErr)
+      return { data: null, error: docInsertErr.message }
+    }
+
+    // 2. Atualizar oportunidades_checklist_itens para compatibilidade e status de conclusão
     const { error: dbErr } = await db
       .from('oportunidades_checklist_itens')
       .update({
@@ -726,8 +813,7 @@ export async function uploadChecklistAnexo(params: {
       .eq('id', params.item_id)
 
     if (dbErr) {
-      console.error('Erro ao atualizar registro do anexo:', dbErr)
-      return { data: null, error: dbErr.message }
+      console.error('Erro ao atualizar registro do anexo legado:', dbErr)
     }
 
     // Registrar na linha do tempo

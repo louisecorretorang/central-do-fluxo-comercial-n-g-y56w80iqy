@@ -302,6 +302,16 @@ export default function OportunidadeDetalhes() {
               </span>
             </div>
 
+            {/* Valor fechado (R$) */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="text-slate-400 font-medium block">Valor fechado (R$)</span>
+              <span className="font-bold text-emerald-700 text-base mt-0.5 block font-mono">
+                {opp.valor_fechado !== null && opp.valor_fechado !== undefined
+                  ? formatCurrencyBRL(opp.valor_fechado)
+                  : '—'}
+              </span>
+            </div>
+
             {/* Data prevista */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
               <span className="text-slate-400 font-medium block">Data prevista de fechamento</span>
@@ -351,6 +361,28 @@ export default function OportunidadeDetalhes() {
               </span>
             </div>
           </div>
+
+          {/* Motivo e Observação da Perda (quando perdida) */}
+          {opp.situacao === 'Perdida' && (
+            <div className="mt-4 p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 text-rose-800 font-bold">
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>Oportunidade Perdida</span>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Motivo da perda: </span>
+                <span className="font-bold text-rose-950">
+                  {opp.motivo_perda_nome || 'Não informado'}
+                </span>
+              </div>
+              {opp.observacao_perda && (
+                <div>
+                  <span className="text-slate-500 font-medium">Observação: </span>
+                  <span className="text-slate-800 whitespace-pre-wrap">{opp.observacao_perda}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Observações */}
           {opp.observacoes && (

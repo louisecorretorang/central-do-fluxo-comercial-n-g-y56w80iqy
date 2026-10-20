@@ -29,6 +29,8 @@ export interface Cliente {
   cidade?: string | null
   uf?: string | null
   origem?: string | null
+  origem_id?: string | null
+  origem_nome?: string | null
   indicado_por_tipo?: IndicadoPorTipo | null
   indicado_por_nome?: string | null
   responsavel_comercial_id?: string | null
@@ -43,6 +45,12 @@ export interface Cliente {
     id: string
     nome: string
     email: string
+  } | null
+
+  // Relacionamento opcional com origem_lead
+  origem_lead?: {
+    id: string
+    nome: string
   } | null
 
   // Contatos vinculados
@@ -84,6 +92,7 @@ export interface ClienteFormData {
   cidade?: string
   uf?: string
   origem?: string
+  origem_id?: string | ''
   indicado_por_tipo?: IndicadoPorTipo | ''
   indicado_por_nome?: string
   responsavel_comercial_id?: string | ''

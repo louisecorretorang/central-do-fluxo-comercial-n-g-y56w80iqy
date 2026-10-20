@@ -87,13 +87,13 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [duplicateCliente, setDuplicateCliente] = useState<Cliente | null>(null)
 
-  // Carregar lista de responsáveis comerciais e origens de lead cadastradas
+  // Carregar lista de responsáveis comerciais e origens de lead cadastradas (apenas ativas - Item 6)
   useEffect(() => {
     if (open) {
       getResponsaveisComerciais().then((res) => {
         if (res.data) setResponsaveis(res.data)
       })
-      getOrigensLead().then((res) => {
+      getOrigensLead(true).then((res) => {
         if (res.data) setOrigensLeadList(res.data)
       })
     }
@@ -136,7 +136,8 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
         }
         setCidade(cliente.cidade || '')
         setUf(cliente.uf || '')
-        setOrigem(cliente.origem || '')
+        // Se cliente já tem origem_id vinculada, usar o id dela ou nome correspondente
+        setOrigem(cliente.origem_id || cliente.origem || '')
         setIndicadoPorTipo(cliente.indicado_por_tipo || '')
         setIndicadoPorNome(cliente.indicado_por_nome || '')
         setResponsavelId(cliente.responsavel_comercial_id || '')
@@ -258,11 +259,15 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
 
     setSaving(true)
 
+    // Encontrar se a origem selecionada é um ID do catálogo de origens
+    const matchedOrigem = origensLeadList.find((o) => o.id === origem || o.nome === origem)
+
     const payload: ClienteFormData = {
       tipo,
       cidade: cidade.trim(),
       uf: uf.trim(),
-      origem: origem.trim(),
+      origem: matchedOrigem ? matchedOrigem.nome : origem.trim() || undefined,
+      origem_id: matchedOrigem ? matchedOrigem.id : origem.trim() || undefined,
       indicado_por_tipo: indicadoPorTipo || undefined,
       indicado_por_nome: indicadoPorNome.trim(),
       responsavel_comercial_id: responsavelId || undefined,
@@ -685,24 +690,31 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {/* Origem */}
+              {/* Origem (Chave Estrangeira ligada à lista de origens do catálogo - apenas ativas) */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Origem do cliente</Label>
                 <Select
-                  value={origem || 'none'}
+                  value={
+                    origem && origensLeadList.some((o) => o.id === origem)
+                      ? origem
+                      : origem && origensLeadList.some((o) => o.nome === origem)
+                        ? origensLeadList.find((o) => o.nome === origem)?.id || origem
+                        : origem || 'none'
+                  }
                   onValueChange={(val) => setOrigem(val === 'none' ? '' : val)}
                 >
                   <SelectTrigger className="h-10 rounded-xl text-sm border-slate-200">
-                    <SelectValue placeholder="Selecione a origem do lead" />
+                    <SelectValue placeholder="Selecione a origem do catálogo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Não informada</SelectItem>
-                    {/* Se o cliente já tinha uma origem que não está no catálogo, preserva exibindo-a */}
-                    {origem && !origensLeadList.some((o) => o.nome === origem) && (
-                      <SelectItem value={origem}>{origem}</SelectItem>
-                    )}
+                    {/* Se o cliente tinha um valor legado que não está na lista de ativas, preserva */}
+                    {origem &&
+                      !origensLeadList.some((o) => o.id === origem || o.nome === origem) && (
+                        <SelectItem value={origem}>{origem}</SelectItem>
+                      )}
                     {origensLeadList.map((origemItem) => (
-                      <SelectItem key={origemItem.id} value={origemItem.nome}>
+                      <SelectItem key={origemItem.id} value={origemItem.id}>
                         {origemItem.nome}
                       </SelectItem>
                     ))}

@@ -66,15 +66,16 @@ export async function getProdutosCatalogo(): Promise<{
 /**
  * Busca todas as Origens de Lead cadastradas no catálogo
  */
-export async function getOrigensLead(): Promise<{
+export async function getOrigensLead(apenasAtivas: boolean = false): Promise<{
   data: OrigemLead[] | null
   error: Error | null
 }> {
   try {
-    const { data, error } = await db
-      .from('origens_lead')
-      .select('*')
-      .order('nome', { ascending: true })
+    let query = db.from('origens_lead').select('*').order('nome', { ascending: true })
+    if (apenasAtivas) {
+      query = query.eq('situacao', 'ativa')
+    }
+    const { data, error } = await query
 
     if (error) {
       console.error('Erro ao buscar origens de lead:', error)
@@ -91,16 +92,22 @@ export async function getOrigensLead(): Promise<{
 /**
  * Busca todos os Motivos cadastrados no catálogo
  */
-export async function getMotivosCatalogo(): Promise<{
+export async function getMotivosCatalogo(apenasAtivos: boolean = false): Promise<{
   data: MotivoCatalogo[] | null
   error: Error | null
 }> {
   try {
-    const { data, error } = await db
+    let query = db
       .from('motivos')
       .select('*')
       .order('tipo', { ascending: true })
       .order('nome', { ascending: true })
+
+    if (apenasAtivos) {
+      query = query.eq('situacao', 'ativa')
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.error('Erro ao buscar motivos:', error)

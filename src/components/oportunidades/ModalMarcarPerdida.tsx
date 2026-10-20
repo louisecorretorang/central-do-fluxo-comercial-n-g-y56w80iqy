@@ -37,10 +37,12 @@ export function ModalMarcarPerdida({
 
   useEffect(() => {
     if (open) {
-      getMotivosCatalogo().then((res) => {
+      getMotivosCatalogo(true).then((res) => {
         if (res.data) {
-          // Filtrar somente motivos do tipo 'perda'
-          const apenasPerda = res.data.filter((m) => m.tipo === 'perda')
+          // Filtrar somente motivos do tipo 'perda' e ativos
+          const apenasPerda = res.data.filter(
+            (m) => m.tipo === 'perda' && (!m.situacao || m.situacao === 'ativa'),
+          )
           setMotivos(apenasPerda)
         }
       })

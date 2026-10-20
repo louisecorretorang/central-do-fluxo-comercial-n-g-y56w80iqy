@@ -149,8 +149,8 @@ export function TrilhaEtapas({
                           <span className="flex items-center gap-1 text-emerald-700 font-medium">
                             <Calendar className="w-3.5 h-3.5 text-emerald-600" />
                             Concluída em {formatDateBR(etapa.concluida_em)}
-                            {etapa.responsavel_usuario_nome &&
-                              ` por ${etapa.responsavel_usuario_nome}`}
+                            {(etapa.concluida_por_nome || etapa.responsavel_usuario_nome) &&
+                              ` por ${etapa.concluida_por_nome || etapa.responsavel_usuario_nome}`}
                           </span>
                         )}
 
@@ -222,11 +222,28 @@ export function TrilhaEtapas({
                           </div>
 
                           {item.tipo === 'Documento' && (
-                            <div className="text-[11px] text-slate-600 flex items-center gap-1.5 pt-1">
-                              <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
-                              <span className="truncate">
-                                {item.arquivo_nome ? item.arquivo_nome : 'Nenhum arquivo anexado'}
-                              </span>
+                            <div className="text-[11px] text-slate-600 space-y-1 pt-1">
+                              {item.documentos && item.documentos.length > 0 ? (
+                                <div className="space-y-1">
+                                  {item.documentos.map((doc) => (
+                                    <div key={doc.id} className="flex items-center gap-1.5">
+                                      <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                                      <span className="truncate font-medium text-slate-700">
+                                        {doc.arquivo_nome}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                                  <span className="truncate">
+                                    {item.arquivo_nome
+                                      ? item.arquivo_nome
+                                      : 'Nenhum arquivo anexado'}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           )}
 

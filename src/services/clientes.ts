@@ -86,6 +86,7 @@ export const getClienteById = async (id: string): Promise<{ data: Cliente | null
       .select(`
         *,
         responsavel_comercial:profiles!responsavel_comercial_id(id, nome, email),
+        origem_lead:origens_lead!origem_id(id, nome),
         contatos:clientes_contatos(*)
       `)
       .eq('id', id)
@@ -174,6 +175,7 @@ export const createCliente = async (
       cidade: formData.cidade?.trim() || null,
       uf: formData.uf?.trim() ? formData.uf.trim().toUpperCase() : null,
       origem: formData.origem?.trim() || null,
+      origem_id: formData.origem_id || null,
       indicado_por_tipo: formData.indicado_por_tipo || null,
       indicado_por_nome: formData.indicado_por_nome?.trim() || null,
       responsavel_comercial_id: formData.responsavel_comercial_id || null,
@@ -243,6 +245,7 @@ export const updateCliente = async (
       cidade: formData.cidade?.trim() || null,
       uf: formData.uf?.trim() ? formData.uf.trim().toUpperCase() : null,
       origem: formData.origem?.trim() || null,
+      origem_id: formData.origem_id || null,
       indicado_por_tipo: formData.indicado_por_tipo || null,
       indicado_por_nome: formData.indicado_por_nome?.trim() || null,
       responsavel_comercial_id: formData.responsavel_comercial_id || null,

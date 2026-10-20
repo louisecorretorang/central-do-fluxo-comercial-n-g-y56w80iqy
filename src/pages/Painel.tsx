@@ -155,8 +155,8 @@ export default function Painel() {
 
   // =========================================================================
   // 2. Ganhas e Perdidas no MÊS Selecionado
-  // Ganhas: quantidade e valor fechado (metadados.valor_fechado ou valor_estimado)
-  // Perdidas: quantidade e valor estimado
+  // Ganhas: quantidade e valor fechado (se valor_fechado estiver vazio, usa o estimado)
+  // Perdidas: quantidade e motivos a partir do novo campo motivo da perda (motivo_perda_id / motivo_perda_nome)
   // =========================================================================
   const metricasMes = useMemo(() => {
     const oppIdsFiltradas = new Set(oppsFiltradas.map((o) => o.id))
@@ -189,7 +189,11 @@ export default function Painel() {
         if (!ganhasIds.has(item.oportunidade_id)) {
           ganhasIds.add(item.oportunidade_id)
           qtdGanhas += 1
-          const vFechado = Number(meta.valor_fechado) || (opp && Number(opp.valor_estimado)) || 0
+          // Valor fechado da oportunidade; se vazio, usa valor_estimado
+          const vFechado =
+            opp?.valor_fechado !== null && opp?.valor_fechado !== undefined
+              ? Number(opp.valor_fechado)
+              : Number(meta.valor_fechado) || (opp && Number(opp.valor_estimado)) || 0
           valorGanhas += vFechado
         }
       }
@@ -206,14 +210,15 @@ export default function Painel() {
           const vEstimado = (opp && Number(opp.valor_estimado)) || 0
           valorPerdidas += vEstimado
 
-          const motivoNome = meta.motivo_nome || 'Outro / Não especificado'
+          // Contar a partir do novo campo motivo da perda da oportunidade (ou fallback para linha do tempo)
+          const motivoNome =
+            opp?.motivo_perda_nome || (meta.motivo_nome as string) || 'Outro / Não especificado'
           motivosPerdaContagem.set(motivoNome, (motivosPerdaContagem.get(motivoNome) || 0) + 1)
         }
       }
     }
 
-    // Caso não haja registros na timeline (ou para complementar oportunidades atualizadas no mês)
-    // checamos também as oportunidades cuja updated_at está dentro do mês e situação é Ganha ou Perdida
+    // Complementar com oportunidades cuja updated_at está dentro do mês e situação é Ganha ou Perdida
     for (const opp of oppsFiltradas) {
       const upDate = new Date(opp.updated_at)
       const pertenceAoMes =
@@ -226,11 +231,18 @@ export default function Painel() {
         ) {
           ganhasIds.add(opp.id)
           qtdGanhas += 1
-          valorGanhas += opp.valor_estimado || 0
+          const vFechado =
+            opp.valor_fechado !== null && opp.valor_fechado !== undefined
+              ? Number(opp.valor_fechado)
+              : Number(opp.valor_estimado) || 0
+          valorGanhas += vFechado
         } else if (opp.situacao === 'Perdida' && !perdidasIds.has(opp.id)) {
           perdidasIds.add(opp.id)
           qtdPerdidas += 1
           valorPerdidas += opp.valor_estimado || 0
+
+          const motivoNome = opp.motivo_perda_nome || 'Outro / Não especificado'
+          motivosPerdaContagem.set(motivoNome, (motivosPerdaContagem.get(motivoNome) || 0) + 1)
         }
       }
     }

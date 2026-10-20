@@ -91,10 +91,17 @@ export function ChecklistEtapaAtual({
   }
 
   // Verifica se todos os itens OBRIGATÓRIOS da etapa atual foram preenchidos / concluídos
+  // Para 'Documento': conta como preenchido quando tiver PELO MENOS UM arquivo
   const obrigatorios = etapaAtual.itens.filter((i) => i.obrigatorio)
   const obrigatoriosConcluidos = obrigatorios.filter((i) => {
     if (i.tipo === 'Confirmação') return i.concluido
-    if (i.tipo === 'Documento') return Boolean(i.arquivo_url || i.concluido)
+    if (i.tipo === 'Documento') {
+      return (
+        (i.documentos && i.documentos.length > 0) ||
+        Boolean(i.arquivo_url && i.arquivo_url.trim().length > 0) ||
+        i.concluido
+      )
+    }
     if (i.tipo === 'Informação') {
       const v = valoresLocais[i.id] !== undefined ? valoresLocais[i.id] : i.valor
       return Boolean(v && String(v).trim().length > 0)
@@ -183,22 +190,26 @@ export function ChecklistEtapaAtual({
     }
   }
 
-  // Download seguro de documento privado via URL assinada
-  const handleBaixarDocumento = async (item: OportunidadeChecklistItem) => {
-    if (!item.arquivo_url) return
+  // Download seguro de documento privado via URL assinada (por arquivo_caminho ou item legado)
+  const handleBaixarDocumentoPorCaminho = async (caminho: string, itemId: string) => {
+    if (!caminho) return
 
-    setBaixandoItemId(item.id)
+    setBaixandoItemId(itemId)
     setErro(null)
 
-    const res = await getDownloadAnexoUrl(item.arquivo_url)
+    const res = await getDownloadAnexoUrl(caminho)
     setBaixandoItemId(null)
 
     if (res.error || !res.url) {
       setErro(`Erro ao obter arquivo: ${res.error || 'URL inválida'}`)
     } else {
-      // Abre o arquivo privado com URL assinada temporária
       window.open(res.url, '_blank', 'noopener,noreferrer')
     }
+  }
+
+  const handleBaixarDocumento = async (item: OportunidadeChecklistItem) => {
+    if (!item.arquivo_url) return
+    return handleBaixarDocumentoPorCaminho(item.arquivo_url, item.id)
   }
 
   // Lista dos nomes dos itens que faltam preencher (se houver pendências)
@@ -449,11 +460,60 @@ export function ChecklistEtapaAtual({
                           </div>
 
                           {/* ==============================================
-                              CASO 1: DOCUMENTO (Upload privado + Baixar)
+                              CASO 1: DOCUMENTO (Múltiplos arquivos por item)
                              ============================================== */}
                           {item.tipo === 'Documento' && (
-                            <div className="mt-3 space-y-2">
-                              {item.arquivo_nome ? (
+                            <div className="mt-3 space-y-2.5">
+                              {/* Lista de arquivos do item */}
+                              {item.documentos && item.documentos.length > 0 ? (
+                                <div className="space-y-2">
+                                  {item.documentos.map((doc) => (
+                                    <div
+                                      key={doc.id}
+                                      className="p-3 rounded-xl bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-2"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <FileText className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-semibold text-slate-800 truncate">
+                                            {doc.arquivo_nome}
+                                          </p>
+                                          <p className="text-[10px] text-slate-400">
+                                            {formatBytes(doc.arquivo_tamanho)}
+                                            {doc.enviado_em &&
+                                              ` • Anexado em ${formatDateBR(doc.enviado_em)}`}
+                                            {doc.enviado_por_nome && ` por ${doc.enviado_por_nome}`}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleBaixarDocumentoPorCaminho(
+                                            doc.arquivo_caminho,
+                                            doc.id,
+                                          )
+                                        }
+                                        disabled={baixandoItemId === doc.id}
+                                        className="h-8 px-2.5 rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 text-xs font-semibold btn-press"
+                                      >
+                                        {baixandoItemId === doc.id ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Download className="w-3.5 h-3.5 mr-1" />
+                                            Baixar
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : item.arquivo_nome ? (
+                                /* Fallback se tiver arquivo legado */
                                 <div className="p-3 rounded-xl bg-white border border-slate-200 flex flex-wrap items-center justify-between gap-2">
                                   <div className="flex items-center gap-2 min-w-0">
                                     <FileText className="w-4 h-4 text-teal-600 flex-shrink-0" />
@@ -471,83 +531,58 @@ export function ChecklistEtapaAtual({
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleBaixarDocumento(item)}
-                                      disabled={isBaixando}
-                                      className="h-8 px-2.5 rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 text-xs font-semibold btn-press"
-                                    >
-                                      {isBaixando ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      ) : (
-                                        <>
-                                          <Download className="w-3.5 h-3.5 mr-1" />
-                                          Baixar
-                                        </>
-                                      )}
-                                    </Button>
-
-                                    {/* Substituir arquivo */}
-                                    <input
-                                      type="file"
-                                      className="hidden"
-                                      ref={(el) => {
-                                        fileInputRefs.current[item.id] = el
-                                      }}
-                                      onChange={(e) => handleFileChange(item, e)}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => fileInputRefs.current[item.id]?.click()}
-                                      disabled={isUploading}
-                                      className="h-8 px-2 rounded-lg text-slate-500 hover:text-slate-800 text-xs"
-                                    >
-                                      {isUploading ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                      ) : (
-                                        'Substituir'
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    ref={(el) => {
-                                      fileInputRefs.current[item.id] = el
-                                    }}
-                                    onChange={(e) => handleFileChange(item, e)}
-                                  />
                                   <Button
                                     type="button"
-                                    onClick={() => fileInputRefs.current[item.id]?.click()}
-                                    disabled={isUploading}
-                                    className="h-8 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold btn-press"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleBaixarDocumento(item)}
+                                    disabled={isBaixando}
+                                    className="h-8 px-2.5 rounded-lg border-teal-200 text-teal-800 hover:bg-teal-50 text-xs font-semibold btn-press"
                                   >
-                                    {isUploading ? (
-                                      <>
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                                        Enviando arquivo...
-                                      </>
+                                    {isBaixando ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
                                       <>
-                                        <Upload className="w-3.5 h-3.5 mr-1.5" />
-                                        Anexar arquivo
+                                        <Download className="w-3.5 h-3.5 mr-1" />
+                                        Baixar
                                       </>
                                     )}
                                   </Button>
-                                  <span className="text-[11px] text-slate-400">
-                                    Armazenado em ambiente privado seguro
-                                  </span>
                                 </div>
-                              )}
+                              ) : null}
+
+                              {/* Botão Anexar (sempre adiciona um novo arquivo, nunca substitui) */}
+                              <div className="flex items-center gap-2 pt-0.5">
+                                <input
+                                  type="file"
+                                  className="hidden"
+                                  ref={(el) => {
+                                    fileInputRefs.current[item.id] = el
+                                  }}
+                                  onChange={(e) => handleFileChange(item, e)}
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={() => fileInputRefs.current[item.id]?.click()}
+                                  disabled={isUploading}
+                                  className="h-8 px-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold btn-press"
+                                >
+                                  {isUploading ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                      Enviando arquivo...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Upload className="w-3.5 h-3.5 mr-1.5" />
+                                      Anexar arquivo
+                                    </>
+                                  )}
+                                </Button>
+                                <span className="text-[11px] text-slate-400">
+                                  Armazenado em ambiente privado seguro (permite múltiplos arquivos)
+                                </span>
+                              </div>
                             </div>
                           )}
 
