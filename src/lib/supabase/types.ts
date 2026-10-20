@@ -1,11 +1,17 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.18'
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -18,18 +24,20 @@ export type Database = {
           data_de_nascimento: string | null
           id: string
           indicado_por_nome: string | null
-          indicado_por_tipo: Database['public']['Enums']['indicado_por_tipo'] | null
+          indicado_por_tipo:
+            | Database["public"]["Enums"]["indicado_por_tipo"]
+            | null
           nome_completo: string | null
           nome_fantasia: string | null
           numero_vidas: number | null
           observacoes: string | null
           origem: string | null
-          porte: Database['public']['Enums']['cliente_porte'] | null
+          porte: Database["public"]["Enums"]["cliente_porte"] | null
           razao_social: string | null
           responsavel_comercial_id: string | null
           segmento: string | null
-          situacao: Database['public']['Enums']['cliente_situacao']
-          tipo: Database['public']['Enums']['cliente_tipo']
+          situacao: Database["public"]["Enums"]["cliente_situacao"]
+          tipo: Database["public"]["Enums"]["cliente_tipo"]
           uf: string | null
           updated_at: string
         }
@@ -41,18 +49,20 @@ export type Database = {
           data_de_nascimento?: string | null
           id?: string
           indicado_por_nome?: string | null
-          indicado_por_tipo?: Database['public']['Enums']['indicado_por_tipo'] | null
+          indicado_por_tipo?:
+            | Database["public"]["Enums"]["indicado_por_tipo"]
+            | null
           nome_completo?: string | null
           nome_fantasia?: string | null
           numero_vidas?: number | null
           observacoes?: string | null
           origem?: string | null
-          porte?: Database['public']['Enums']['cliente_porte'] | null
+          porte?: Database["public"]["Enums"]["cliente_porte"] | null
           razao_social?: string | null
           responsavel_comercial_id?: string | null
           segmento?: string | null
-          situacao?: Database['public']['Enums']['cliente_situacao']
-          tipo: Database['public']['Enums']['cliente_tipo']
+          situacao?: Database["public"]["Enums"]["cliente_situacao"]
+          tipo: Database["public"]["Enums"]["cliente_tipo"]
           uf?: string | null
           updated_at?: string
         }
@@ -64,34 +74,36 @@ export type Database = {
           data_de_nascimento?: string | null
           id?: string
           indicado_por_nome?: string | null
-          indicado_por_tipo?: Database['public']['Enums']['indicado_por_tipo'] | null
+          indicado_por_tipo?:
+            | Database["public"]["Enums"]["indicado_por_tipo"]
+            | null
           nome_completo?: string | null
           nome_fantasia?: string | null
           numero_vidas?: number | null
           observacoes?: string | null
           origem?: string | null
-          porte?: Database['public']['Enums']['cliente_porte'] | null
+          porte?: Database["public"]["Enums"]["cliente_porte"] | null
           razao_social?: string | null
           responsavel_comercial_id?: string | null
           segmento?: string | null
-          situacao?: Database['public']['Enums']['cliente_situacao']
-          tipo?: Database['public']['Enums']['cliente_tipo']
+          situacao?: Database["public"]["Enums"]["cliente_situacao"]
+          tipo?: Database["public"]["Enums"]["cliente_tipo"]
           uf?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'clientes_responsavel_comercial_id_fkey'
-            columns: ['responsavel_comercial_id']
+            foreignKeyName: "clientes_responsavel_comercial_id_fkey"
+            columns: ["responsavel_comercial_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
       clientes_contatos: {
         Row: {
-          cargo_area: Database['public']['Enums']['contato_cargo_area']
+          cargo_area: Database["public"]["Enums"]["contato_cargo_area"]
           cliente_id: string
           created_at: string
           email: string | null
@@ -102,7 +114,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          cargo_area?: Database['public']['Enums']['contato_cargo_area']
+          cargo_area?: Database["public"]["Enums"]["contato_cargo_area"]
           cliente_id: string
           created_at?: string
           email?: string | null
@@ -113,7 +125,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          cargo_area?: Database['public']['Enums']['contato_cargo_area']
+          cargo_area?: Database["public"]["Enums"]["contato_cargo_area"]
           cliente_id?: string
           created_at?: string
           email?: string | null
@@ -125,11 +137,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'clientes_contatos_cliente_id_fkey'
-            columns: ['cliente_id']
+            foreignKeyName: "clientes_contatos_cliente_id_fkey"
+            columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: 'clientes'
-            referencedColumns: ['id']
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -158,46 +170,50 @@ export type Database = {
         Row: {
           created_at: string
           etapa_id: string
-          formato: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato: Database["public"]["Enums"]["checklist_campo_formato"] | null
           id: string
           obrigatorio: boolean
           opcoes: Json | null
           ordem: number
-          tipo: Database['public']['Enums']['checklist_item_tipo']
+          tipo: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           etapa_id: string
-          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato?:
+            | Database["public"]["Enums"]["checklist_campo_formato"]
+            | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem: number
-          tipo: Database['public']['Enums']['checklist_item_tipo']
+          tipo: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           etapa_id?: string
-          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato?:
+            | Database["public"]["Enums"]["checklist_campo_formato"]
+            | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
-          tipo?: Database['public']['Enums']['checklist_item_tipo']
+          tipo?: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'fluxo_checklist_itens_etapa_id_fkey'
-            columns: ['etapa_id']
+            foreignKeyName: "fluxo_checklist_itens_etapa_id_fkey"
+            columns: ["etapa_id"]
             isOneToOne: false
-            referencedRelation: 'fluxo_etapas'
-            referencedColumns: ['id']
+            referencedRelation: "fluxo_etapas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -206,61 +222,61 @@ export type Database = {
           created_at: string
           descricao: string | null
           equipe_id: string | null
-          funcao: Database['public']['Enums']['user_funcao'] | null
+          funcao: Database["public"]["Enums"]["user_funcao"] | null
           id: string
           is_etapa_ganho: boolean
           modelo_id: string
           nome: string
           ordem: number
           prazo_dias: number | null
-          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
-          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          responsavel_tipo: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
+          tipo: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           descricao?: string | null
           equipe_id?: string | null
-          funcao?: Database['public']['Enums']['user_funcao'] | null
+          funcao?: Database["public"]["Enums"]["user_funcao"] | null
           id?: string
           is_etapa_ganho?: boolean
           modelo_id: string
           nome: string
           ordem: number
           prazo_dias?: number | null
-          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
-          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          responsavel_tipo?: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
+          tipo: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           descricao?: string | null
           equipe_id?: string | null
-          funcao?: Database['public']['Enums']['user_funcao'] | null
+          funcao?: Database["public"]["Enums"]["user_funcao"] | null
           id?: string
           is_etapa_ganho?: boolean
           modelo_id?: string
           nome?: string
           ordem?: number
           prazo_dias?: number | null
-          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
-          tipo?: Database['public']['Enums']['fluxo_etapa_tipo']
+          responsavel_tipo?: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
+          tipo?: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'fluxo_etapas_equipe_id_fkey'
-            columns: ['equipe_id']
+            foreignKeyName: "fluxo_etapas_equipe_id_fkey"
+            columns: ["equipe_id"]
             isOneToOne: false
-            referencedRelation: 'equipes'
-            referencedColumns: ['id']
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'fluxo_etapas_modelo_id_fkey'
-            columns: ['modelo_id']
+            foreignKeyName: "fluxo_etapas_modelo_id_fkey"
+            columns: ["modelo_id"]
             isOneToOne: false
-            referencedRelation: 'fluxo_modelos'
-            referencedColumns: ['id']
+            referencedRelation: "fluxo_modelos"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -273,7 +289,7 @@ export type Database = {
           nome: string
           produto_id: string | null
           seguradora_id: string | null
-          situacao: Database['public']['Enums']['fluxo_situacao']
+          situacao: Database["public"]["Enums"]["fluxo_situacao"]
           updated_at: string
           versao: number
         }
@@ -285,7 +301,7 @@ export type Database = {
           nome: string
           produto_id?: string | null
           seguradora_id?: string | null
-          situacao?: Database['public']['Enums']['fluxo_situacao']
+          situacao?: Database["public"]["Enums"]["fluxo_situacao"]
           updated_at?: string
           versao?: number
         }
@@ -297,24 +313,24 @@ export type Database = {
           nome?: string
           produto_id?: string | null
           seguradora_id?: string | null
-          situacao?: Database['public']['Enums']['fluxo_situacao']
+          situacao?: Database["public"]["Enums"]["fluxo_situacao"]
           updated_at?: string
           versao?: number
         }
         Relationships: [
           {
-            foreignKeyName: 'fluxo_modelos_produto_id_fkey'
-            columns: ['produto_id']
+            foreignKeyName: "fluxo_modelos_produto_id_fkey"
+            columns: ["produto_id"]
             isOneToOne: false
-            referencedRelation: 'produtos'
-            referencedColumns: ['id']
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'fluxo_modelos_seguradora_id_fkey'
-            columns: ['seguradora_id']
+            foreignKeyName: "fluxo_modelos_seguradora_id_fkey"
+            columns: ["seguradora_id"]
             isOneToOne: false
-            referencedRelation: 'seguradoras_operadoras'
-            referencedColumns: ['id']
+            referencedRelation: "seguradoras_operadoras"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -323,19 +339,19 @@ export type Database = {
           created_at: string
           id: string
           nome: string
-          tipo: Database['public']['Enums']['motivo_tipo']
+          tipo: Database["public"]["Enums"]["motivo_tipo"]
         }
         Insert: {
           created_at?: string
           id?: string
           nome: string
-          tipo: Database['public']['Enums']['motivo_tipo']
+          tipo: Database["public"]["Enums"]["motivo_tipo"]
         }
         Update: {
           created_at?: string
           id?: string
           nome?: string
-          tipo?: Database['public']['Enums']['motivo_tipo']
+          tipo?: Database["public"]["Enums"]["motivo_tipo"]
         }
         Relationships: []
       }
@@ -375,18 +391,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'notificacoes_destinatario_id_fkey'
-            columns: ['destinatario_id']
+            foreignKeyName: "notificacoes_destinatario_id_fkey"
+            columns: ["destinatario_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'notificacoes_oportunidade_id_fkey'
-            columns: ['oportunidade_id']
+            foreignKeyName: "notificacoes_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -408,7 +424,7 @@ export type Database = {
           protocolo: string
           responsavel_comercial_id: string
           seguradora_id: string | null
-          situacao: Database['public']['Enums']['oportunidade_situacao']
+          situacao: Database["public"]["Enums"]["oportunidade_situacao"]
           updated_at: string
           usou_fluxo_generico: boolean
           valor_estimado: number
@@ -430,7 +446,7 @@ export type Database = {
           protocolo: string
           responsavel_comercial_id: string
           seguradora_id?: string | null
-          situacao?: Database['public']['Enums']['oportunidade_situacao']
+          situacao?: Database["public"]["Enums"]["oportunidade_situacao"]
           updated_at?: string
           usou_fluxo_generico?: boolean
           valor_estimado?: number
@@ -452,74 +468,74 @@ export type Database = {
           protocolo?: string
           responsavel_comercial_id?: string
           seguradora_id?: string | null
-          situacao?: Database['public']['Enums']['oportunidade_situacao']
+          situacao?: Database["public"]["Enums"]["oportunidade_situacao"]
           updated_at?: string
           usou_fluxo_generico?: boolean
           valor_estimado?: number
         }
         Relationships: [
           {
-            foreignKeyName: 'fk_oportunidade_etapa_atual'
-            columns: ['etapa_atual_id']
+            foreignKeyName: "fk_oportunidade_etapa_atual"
+            columns: ["etapa_atual_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades_etapas'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades_etapas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_cliente_id_fkey'
-            columns: ['cliente_id']
+            foreignKeyName: "oportunidades_cliente_id_fkey"
+            columns: ["cliente_id"]
             isOneToOne: false
-            referencedRelation: 'clientes'
-            referencedColumns: ['id']
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_criado_por_fkey'
-            columns: ['criado_por']
+            foreignKeyName: "oportunidades_criado_por_fkey"
+            columns: ["criado_por"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_equipe_id_fkey'
-            columns: ['equipe_id']
+            foreignKeyName: "oportunidades_equipe_id_fkey"
+            columns: ["equipe_id"]
             isOneToOne: false
-            referencedRelation: 'equipes'
-            referencedColumns: ['id']
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_fluxo_modelo_id_fkey'
-            columns: ['fluxo_modelo_id']
+            foreignKeyName: "oportunidades_fluxo_modelo_id_fkey"
+            columns: ["fluxo_modelo_id"]
             isOneToOne: false
-            referencedRelation: 'fluxo_modelos'
-            referencedColumns: ['id']
+            referencedRelation: "fluxo_modelos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_origem_id_fkey'
-            columns: ['origem_id']
+            foreignKeyName: "oportunidades_origem_id_fkey"
+            columns: ["origem_id"]
             isOneToOne: false
-            referencedRelation: 'origens_lead'
-            referencedColumns: ['id']
+            referencedRelation: "origens_lead"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_produto_id_fkey'
-            columns: ['produto_id']
+            foreignKeyName: "oportunidades_produto_id_fkey"
+            columns: ["produto_id"]
             isOneToOne: false
-            referencedRelation: 'produtos'
-            referencedColumns: ['id']
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_responsavel_comercial_id_fkey'
-            columns: ['responsavel_comercial_id']
+            foreignKeyName: "oportunidades_responsavel_comercial_id_fkey"
+            columns: ["responsavel_comercial_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_seguradora_id_fkey'
-            columns: ['seguradora_id']
+            foreignKeyName: "oportunidades_seguradora_id_fkey"
+            columns: ["seguradora_id"]
             isOneToOne: false
-            referencedRelation: 'seguradoras_operadoras'
-            referencedColumns: ['id']
+            referencedRelation: "seguradoras_operadoras"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -533,12 +549,12 @@ export type Database = {
           concluido_por: string | null
           created_at: string
           etapa_oportunidade_id: string
-          formato: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato: Database["public"]["Enums"]["checklist_campo_formato"] | null
           id: string
           obrigatorio: boolean
           opcoes: Json | null
           ordem: number
-          tipo: Database['public']['Enums']['checklist_item_tipo']
+          tipo: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo: string
           updated_at: string
           valor: string | null
@@ -552,12 +568,14 @@ export type Database = {
           concluido_por?: string | null
           created_at?: string
           etapa_oportunidade_id: string
-          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato?:
+            | Database["public"]["Enums"]["checklist_campo_formato"]
+            | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem: number
-          tipo: Database['public']['Enums']['checklist_item_tipo']
+          tipo: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo: string
           updated_at?: string
           valor?: string | null
@@ -571,30 +589,32 @@ export type Database = {
           concluido_por?: string | null
           created_at?: string
           etapa_oportunidade_id?: string
-          formato?: Database['public']['Enums']['checklist_campo_formato'] | null
+          formato?:
+            | Database["public"]["Enums"]["checklist_campo_formato"]
+            | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
-          tipo?: Database['public']['Enums']['checklist_item_tipo']
+          tipo?: Database["public"]["Enums"]["checklist_item_tipo"]
           titulo?: string
           updated_at?: string
           valor?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: 'oportunidades_checklist_itens_concluido_por_fkey'
-            columns: ['concluido_por']
+            foreignKeyName: "oportunidades_checklist_itens_concluido_por_fkey"
+            columns: ["concluido_por"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_checklist_itens_etapa_oportunidade_id_fkey'
-            columns: ['etapa_oportunidade_id']
+            foreignKeyName: "oportunidades_checklist_itens_etapa_oportunidade_id_fkey"
+            columns: ["etapa_oportunidade_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades_etapas'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades_etapas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -604,7 +624,7 @@ export type Database = {
           created_at: string
           descricao: string | null
           equipe_id: string | null
-          funcao: Database['public']['Enums']['user_funcao'] | null
+          funcao: Database["public"]["Enums"]["user_funcao"] | null
           id: string
           iniciada_em: string | null
           is_etapa_ganho: boolean
@@ -612,10 +632,10 @@ export type Database = {
           oportunidade_id: string
           ordem: number
           prazo_dias: number | null
-          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_tipo: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
           responsavel_usuario_id: string | null
-          situacao: Database['public']['Enums']['etapa_oportunidade_situacao']
-          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          situacao: Database["public"]["Enums"]["etapa_oportunidade_situacao"]
+          tipo: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at: string
         }
         Insert: {
@@ -623,7 +643,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           equipe_id?: string | null
-          funcao?: Database['public']['Enums']['user_funcao'] | null
+          funcao?: Database["public"]["Enums"]["user_funcao"] | null
           id?: string
           iniciada_em?: string | null
           is_etapa_ganho?: boolean
@@ -631,10 +651,10 @@ export type Database = {
           oportunidade_id: string
           ordem: number
           prazo_dias?: number | null
-          responsavel_tipo: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_tipo: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
           responsavel_usuario_id?: string | null
-          situacao?: Database['public']['Enums']['etapa_oportunidade_situacao']
-          tipo: Database['public']['Enums']['fluxo_etapa_tipo']
+          situacao?: Database["public"]["Enums"]["etapa_oportunidade_situacao"]
+          tipo: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at?: string
         }
         Update: {
@@ -642,7 +662,7 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           equipe_id?: string | null
-          funcao?: Database['public']['Enums']['user_funcao'] | null
+          funcao?: Database["public"]["Enums"]["user_funcao"] | null
           id?: string
           iniciada_em?: string | null
           is_etapa_ganho?: boolean
@@ -650,33 +670,33 @@ export type Database = {
           oportunidade_id?: string
           ordem?: number
           prazo_dias?: number | null
-          responsavel_tipo?: Database['public']['Enums']['fluxo_responsavel_tipo']
+          responsavel_tipo?: Database["public"]["Enums"]["fluxo_responsavel_tipo"]
           responsavel_usuario_id?: string | null
-          situacao?: Database['public']['Enums']['etapa_oportunidade_situacao']
-          tipo?: Database['public']['Enums']['fluxo_etapa_tipo']
+          situacao?: Database["public"]["Enums"]["etapa_oportunidade_situacao"]
+          tipo?: Database["public"]["Enums"]["fluxo_etapa_tipo"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'oportunidades_etapas_equipe_id_fkey'
-            columns: ['equipe_id']
+            foreignKeyName: "oportunidades_etapas_equipe_id_fkey"
+            columns: ["equipe_id"]
             isOneToOne: false
-            referencedRelation: 'equipes'
-            referencedColumns: ['id']
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_etapas_oportunidade_id_fkey'
-            columns: ['oportunidade_id']
+            foreignKeyName: "oportunidades_etapas_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_etapas_responsavel_usuario_id_fkey'
-            columns: ['responsavel_usuario_id']
+            foreignKeyName: "oportunidades_etapas_responsavel_usuario_id_fkey"
+            columns: ["responsavel_usuario_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -688,7 +708,7 @@ export type Database = {
           oportunidade_id: string
           registrado_por: string
           resumo: string
-          tipo: Database['public']['Enums']['interacao_tipo']
+          tipo: Database["public"]["Enums"]["interacao_tipo"]
           updated_at: string
         }
         Insert: {
@@ -698,7 +718,7 @@ export type Database = {
           oportunidade_id: string
           registrado_por: string
           resumo: string
-          tipo: Database['public']['Enums']['interacao_tipo']
+          tipo: Database["public"]["Enums"]["interacao_tipo"]
           updated_at?: string
         }
         Update: {
@@ -708,23 +728,23 @@ export type Database = {
           oportunidade_id?: string
           registrado_por?: string
           resumo?: string
-          tipo?: Database['public']['Enums']['interacao_tipo']
+          tipo?: Database["public"]["Enums"]["interacao_tipo"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'oportunidades_interacoes_oportunidade_id_fkey'
-            columns: ['oportunidade_id']
+            foreignKeyName: "oportunidades_interacoes_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_interacoes_registrado_por_fkey'
-            columns: ['registrado_por']
+            foreignKeyName: "oportunidades_interacoes_registrado_por_fkey"
+            columns: ["registrado_por"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -761,18 +781,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'oportunidades_linha_tempo_oportunidade_id_fkey'
-            columns: ['oportunidade_id']
+            foreignKeyName: "oportunidades_linha_tempo_oportunidade_id_fkey"
+            columns: ["oportunidade_id"]
             isOneToOne: false
-            referencedRelation: 'oportunidades'
-            referencedColumns: ['id']
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'oportunidades_linha_tempo_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "oportunidades_linha_tempo_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -814,39 +834,39 @@ export type Database = {
           created_at: string
           equipe_id: string | null
           equipe_nome: string
-          frente: Database['public']['Enums']['catalogo_frente']
+          frente: Database["public"]["Enums"]["catalogo_frente"]
           id: string
           nome: string
-          situacao: Database['public']['Enums']['catalogo_situacao']
+          situacao: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at: string
         }
         Insert: {
           created_at?: string
           equipe_id?: string | null
           equipe_nome: string
-          frente: Database['public']['Enums']['catalogo_frente']
+          frente: Database["public"]["Enums"]["catalogo_frente"]
           id?: string
           nome: string
-          situacao?: Database['public']['Enums']['catalogo_situacao']
+          situacao?: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at?: string
         }
         Update: {
           created_at?: string
           equipe_id?: string | null
           equipe_nome?: string
-          frente?: Database['public']['Enums']['catalogo_frente']
+          frente?: Database["public"]["Enums"]["catalogo_frente"]
           id?: string
           nome?: string
-          situacao?: Database['public']['Enums']['catalogo_situacao']
+          situacao?: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'produtos_equipe_id_fkey'
-            columns: ['equipe_id']
+            foreignKeyName: "produtos_equipe_id_fkey"
+            columns: ["equipe_id"]
             isOneToOne: false
-            referencedRelation: 'equipes'
-            referencedColumns: ['id']
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -871,18 +891,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'profile_equipes_equipe_id_fkey'
-            columns: ['equipe_id']
+            foreignKeyName: "profile_equipes_equipe_id_fkey"
+            columns: ["equipe_id"]
             isOneToOne: false
-            referencedRelation: 'equipes'
-            referencedColumns: ['id']
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'profile_equipes_profile_id_fkey'
-            columns: ['profile_id']
+            foreignKeyName: "profile_equipes_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -890,33 +910,33 @@ export type Database = {
         Row: {
           created_at: string
           email: string
-          funcao: Database['public']['Enums']['user_funcao']
+          funcao: Database["public"]["Enums"]["user_funcao"]
           id: string
           nome: string
-          perfil: Database['public']['Enums']['user_perfil']
-          situacao: Database['public']['Enums']['user_situacao']
+          perfil: Database["public"]["Enums"]["user_perfil"]
+          situacao: Database["public"]["Enums"]["user_situacao"]
           telefone: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
-          funcao?: Database['public']['Enums']['user_funcao']
+          funcao?: Database["public"]["Enums"]["user_funcao"]
           id: string
           nome: string
-          perfil?: Database['public']['Enums']['user_perfil']
-          situacao?: Database['public']['Enums']['user_situacao']
+          perfil?: Database["public"]["Enums"]["user_perfil"]
+          situacao?: Database["public"]["Enums"]["user_situacao"]
           telefone?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           email?: string
-          funcao?: Database['public']['Enums']['user_funcao']
+          funcao?: Database["public"]["Enums"]["user_funcao"]
           id?: string
           nome?: string
-          perfil?: Database['public']['Enums']['user_perfil']
-          situacao?: Database['public']['Enums']['user_situacao']
+          perfil?: Database["public"]["Enums"]["user_perfil"]
+          situacao?: Database["public"]["Enums"]["user_situacao"]
           telefone?: string | null
           updated_at?: string
         }
@@ -924,30 +944,30 @@ export type Database = {
       }
       seguradoras_operadoras: {
         Row: {
-          canal_cotacao: Database['public']['Enums']['canal_cotacao']
+          canal_cotacao: Database["public"]["Enums"]["canal_cotacao"]
           created_at: string
-          frente: Database['public']['Enums']['catalogo_frente']
+          frente: Database["public"]["Enums"]["catalogo_frente"]
           id: string
           nome: string
-          situacao: Database['public']['Enums']['catalogo_situacao']
+          situacao: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at: string
         }
         Insert: {
-          canal_cotacao: Database['public']['Enums']['canal_cotacao']
+          canal_cotacao: Database["public"]["Enums"]["canal_cotacao"]
           created_at?: string
-          frente: Database['public']['Enums']['catalogo_frente']
+          frente: Database["public"]["Enums"]["catalogo_frente"]
           id?: string
           nome: string
-          situacao?: Database['public']['Enums']['catalogo_situacao']
+          situacao?: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at?: string
         }
         Update: {
-          canal_cotacao?: Database['public']['Enums']['canal_cotacao']
+          canal_cotacao?: Database["public"]["Enums"]["canal_cotacao"]
           created_at?: string
-          frente?: Database['public']['Enums']['catalogo_frente']
+          frente?: Database["public"]["Enums"]["catalogo_frente"]
           id?: string
           nome?: string
-          situacao?: Database['public']['Enums']['catalogo_situacao']
+          situacao?: Database["public"]["Enums"]["catalogo_situacao"]
           updated_at?: string
         }
         Relationships: []
@@ -1006,6 +1026,10 @@ export type Database = {
         }
         Returns: Json
       }
+      pode_ver_oportunidade: {
+        Args: { p_oportunidade_id: string; p_usuario_id: string }
+        Returns: boolean
+      }
       voltar_etapa_oportunidade: {
         Args: {
           p_etapa_atual_id: string
@@ -1016,34 +1040,48 @@ export type Database = {
       }
     }
     Enums: {
-      canal_cotacao: 'Portal' | 'Multicálculo' | 'E-mail' | 'WhatsApp'
-      catalogo_frente: 'Seguros' | 'Saúde'
-      catalogo_situacao: 'ativa' | 'inativa'
-      checklist_campo_formato: 'texto' | 'número' | 'valor' | 'data' | 'sim_nao' | 'opções'
-      checklist_item_tipo: 'Documento' | 'Informação' | 'Confirmação'
-      cliente_porte: 'micro' | 'pequena' | 'média' | 'grande'
-      cliente_situacao: 'ativo' | 'arquivado'
-      cliente_tipo: 'PJ' | 'PF'
-      contato_cargo_area: 'RH' | 'Financeiro' | 'Sócio' | 'Administrativo' | 'Outro'
-      etapa_oportunidade_situacao: 'pendente' | 'em_andamento' | 'concluida'
-      fluxo_etapa_tipo: 'Trabalho interno' | 'Aguardando cliente' | 'Aguardando seguradora'
-      fluxo_responsavel_tipo: 'responsavel_comercial' | 'fila_equipe'
-      fluxo_situacao: 'ativo' | 'inativo'
-      indicado_por_tipo: 'cliente' | 'colaborador' | 'parceiro'
-      interacao_tipo: 'Ligação' | 'WhatsApp' | 'E-mail' | 'Reunião' | 'Outro'
-      motivo_tipo: 'perda' | 'descarte' | 'adiamento'
+      canal_cotacao: "Portal" | "Multicálculo" | "E-mail" | "WhatsApp"
+      catalogo_frente: "Seguros" | "Saúde"
+      catalogo_situacao: "ativa" | "inativa"
+      checklist_campo_formato:
+        | "texto"
+        | "número"
+        | "valor"
+        | "data"
+        | "sim_nao"
+        | "opções"
+      checklist_item_tipo: "Documento" | "Informação" | "Confirmação"
+      cliente_porte: "micro" | "pequena" | "média" | "grande"
+      cliente_situacao: "ativo" | "arquivado"
+      cliente_tipo: "PJ" | "PF"
+      contato_cargo_area:
+        | "RH"
+        | "Financeiro"
+        | "Sócio"
+        | "Administrativo"
+        | "Outro"
+      etapa_oportunidade_situacao: "pendente" | "em_andamento" | "concluida"
+      fluxo_etapa_tipo:
+        | "Trabalho interno"
+        | "Aguardando cliente"
+        | "Aguardando seguradora"
+      fluxo_responsavel_tipo: "responsavel_comercial" | "fila_equipe"
+      fluxo_situacao: "ativo" | "inativo"
+      indicado_por_tipo: "cliente" | "colaborador" | "parceiro"
+      interacao_tipo: "Ligação" | "WhatsApp" | "E-mail" | "Reunião" | "Outro"
+      motivo_tipo: "perda" | "descarte" | "adiamento"
       oportunidade_situacao:
-        | 'Em andamento'
-        | 'Ganha'
-        | 'Perdida'
-        | 'Descartada'
-        | 'Adiada'
-        | 'Ganha — em finalização'
-        | 'Concluída'
-        | 'Arquivada'
-      user_funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
-      user_perfil: 'Administrador' | 'Gestor' | 'Colaborador'
-      user_situacao: 'ativo' | 'inativo'
+        | "Em andamento"
+        | "Ganha"
+        | "Perdida"
+        | "Descartada"
+        | "Adiada"
+        | "Ganha — em finalização"
+        | "Concluída"
+        | "Arquivada"
+      user_funcao: "Comercial" | "Pós-venda" | "Gestão"
+      user_perfil: "Administrador" | "Gestor" | "Colaborador"
+      user_situacao: "ativo" | "inativo"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1051,31 +1089,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1084,23 +1124,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1109,23 +1149,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1134,70 +1174,88 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      canal_cotacao: ['Portal', 'Multicálculo', 'E-mail', 'WhatsApp'],
-      catalogo_frente: ['Seguros', 'Saúde'],
-      catalogo_situacao: ['ativa', 'inativa'],
-      checklist_campo_formato: ['texto', 'número', 'valor', 'data', 'sim_nao', 'opções'],
-      checklist_item_tipo: ['Documento', 'Informação', 'Confirmação'],
-      cliente_porte: ['micro', 'pequena', 'média', 'grande'],
-      cliente_situacao: ['ativo', 'arquivado'],
-      cliente_tipo: ['PJ', 'PF'],
-      contato_cargo_area: ['RH', 'Financeiro', 'Sócio', 'Administrativo', 'Outro'],
-      etapa_oportunidade_situacao: ['pendente', 'em_andamento', 'concluida'],
-      fluxo_etapa_tipo: ['Trabalho interno', 'Aguardando cliente', 'Aguardando seguradora'],
-      fluxo_responsavel_tipo: ['responsavel_comercial', 'fila_equipe'],
-      fluxo_situacao: ['ativo', 'inativo'],
-      indicado_por_tipo: ['cliente', 'colaborador', 'parceiro'],
-      interacao_tipo: ['Ligação', 'WhatsApp', 'E-mail', 'Reunião', 'Outro'],
-      motivo_tipo: ['perda', 'descarte', 'adiamento'],
-      oportunidade_situacao: [
-        'Em andamento',
-        'Ganha',
-        'Perdida',
-        'Descartada',
-        'Adiada',
-        'Ganha — em finalização',
-        'Concluída',
-        'Arquivada',
+      canal_cotacao: ["Portal", "Multicálculo", "E-mail", "WhatsApp"],
+      catalogo_frente: ["Seguros", "Saúde"],
+      catalogo_situacao: ["ativa", "inativa"],
+      checklist_campo_formato: [
+        "texto",
+        "número",
+        "valor",
+        "data",
+        "sim_nao",
+        "opções",
       ],
-      user_funcao: ['Comercial', 'Pós-venda', 'Gestão'],
-      user_perfil: ['Administrador', 'Gestor', 'Colaborador'],
-      user_situacao: ['ativo', 'inativo'],
+      checklist_item_tipo: ["Documento", "Informação", "Confirmação"],
+      cliente_porte: ["micro", "pequena", "média", "grande"],
+      cliente_situacao: ["ativo", "arquivado"],
+      cliente_tipo: ["PJ", "PF"],
+      contato_cargo_area: [
+        "RH",
+        "Financeiro",
+        "Sócio",
+        "Administrativo",
+        "Outro",
+      ],
+      etapa_oportunidade_situacao: ["pendente", "em_andamento", "concluida"],
+      fluxo_etapa_tipo: [
+        "Trabalho interno",
+        "Aguardando cliente",
+        "Aguardando seguradora",
+      ],
+      fluxo_responsavel_tipo: ["responsavel_comercial", "fila_equipe"],
+      fluxo_situacao: ["ativo", "inativo"],
+      indicado_por_tipo: ["cliente", "colaborador", "parceiro"],
+      interacao_tipo: ["Ligação", "WhatsApp", "E-mail", "Reunião", "Outro"],
+      motivo_tipo: ["perda", "descarte", "adiamento"],
+      oportunidade_situacao: [
+        "Em andamento",
+        "Ganha",
+        "Perdida",
+        "Descartada",
+        "Adiada",
+        "Ganha — em finalização",
+        "Concluída",
+        "Arquivada",
+      ],
+      user_funcao: ["Comercial", "Pós-venda", "Gestão"],
+      user_perfil: ["Administrador", "Gestor", "Colaborador"],
+      user_situacao: ["ativo", "inativo"],
     },
   },
 } as const
+
