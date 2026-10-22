@@ -4,6 +4,7 @@ import {
   getUsersWithEquipes,
   getEquipes,
   inviteUser,
+  resendInviteUser,
   updateUser,
   toggleUserStatus,
 } from '@/services/usuarios'
@@ -37,7 +38,9 @@ import {
   Edit2,
   UserX,
   UserCheck,
+  Send,
   RefreshCw,
+  Loader2,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react'
@@ -60,6 +63,7 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [statusUser, setStatusUser] = useState<UserProfile | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
+  const [resendingUserId, setResendingUserId] = useState<string | null>(null)
 
   // Carregar dados
   const fetchData = useCallback(async () => {
@@ -115,6 +119,35 @@ export default function Usuarios() {
       fetchData()
     }
     return res
+  }
+
+  // Ação de reenviar convite
+  const handleResendInvite = async (user: UserProfile) => {
+    if (resendingUserId) return
+    setResendingUserId(user.id)
+    try {
+      const res = await resendInviteUser(user.email, user.id)
+      if (res.success) {
+        toast({
+          title: 'Convite reenviado!',
+          description: res.message || `Um novo link de ativação foi enviado para ${user.email}.`,
+        })
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao reenviar convite',
+          description: res.error || 'Não foi possível reenviar o convite.',
+        })
+      }
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Falha na conexão. Tente novamente.',
+      })
+    } finally {
+      setResendingUserId(null)
+    }
   }
 
   // Ação de editar
@@ -477,6 +510,29 @@ export default function Usuarios() {
                       {/* Ações */}
                       <TableCell className="py-3.5 text-right pr-6">
                         <div className="inline-flex items-center gap-1.5">
+                          {/* Botão Reenviar Convite */}
+                          {!isCurrent && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleResendInvite(u)}
+                              disabled={isInactive || resendingUserId === u.id}
+                              className="h-8 px-2.5 text-xs text-teal-700 hover:text-teal-800 hover:bg-teal-50 rounded-lg flex items-center gap-1"
+                              title={
+                                isInactive
+                                  ? 'Reative o usuário para reenviar o convite'
+                                  : 'Reenviar link de ativação / acesso por e-mail'
+                              }
+                            >
+                              {resendingUserId === u.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                              ) : (
+                                <Send className="w-3.5 h-3.5 text-teal-600" />
+                              )}
+                              <span>Reenviar</span>
+                            </Button>
+                          )}
+
                           {/* Botão Editar */}
                           <Button
                             variant="ghost"
@@ -638,6 +694,23 @@ export default function Usuarios() {
 
                     {/* Botões de Ação Mobile */}
                     <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      {!isCurrent && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isInactive || resendingUserId === u.id}
+                          onClick={() => handleResendInvite(u)}
+                          className="flex-1 h-9 rounded-xl text-xs font-semibold text-teal-700 border-teal-200 hover:bg-teal-50 flex items-center justify-center gap-1.5"
+                        >
+                          {resendingUserId === u.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                          ) : (
+                            <Send className="w-3.5 h-3.5 text-teal-600" />
+                          )}
+                          <span>Reenviar</span>
+                        </Button>
+                      )}
+
                       <Button
                         variant="outline"
                         size="sm"

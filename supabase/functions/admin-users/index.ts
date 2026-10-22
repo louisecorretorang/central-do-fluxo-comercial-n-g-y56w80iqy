@@ -10,6 +10,14 @@ interface InviteUserPayload {
   perfil: 'Administrador' | 'Gestor' | 'Colaborador'
   funcao: 'Comercial' | 'Pós-venda' | 'Gestão'
   equipeIds: string[]
+  redirectTo?: string
+}
+
+interface ResendInvitePayload {
+  action: 'resend_invite'
+  userId?: string
+  email: string
+  redirectTo?: string
 }
 
 interface UpdateUserPayload {
@@ -29,7 +37,7 @@ interface ToggleStatusPayload {
   situacao: 'ativo' | 'inativo'
 }
 
-type Payload = InviteUserPayload | UpdateUserPayload | ToggleStatusPayload
+type Payload = InviteUserPayload | ResendInvitePayload | UpdateUserPayload | ToggleStatusPayload
 
 Deno.serve(async (req: Request) => {
   // Trata preflight CORS
@@ -134,7 +142,16 @@ Deno.serve(async (req: Request) => {
       }
 
       // Envia convite por e-mail através da API de Admin do Supabase
-      const siteUrl = Deno.env.get('SITE_URL') || 'http://localhost:3000'
+      // Sempre usar URL pública de produção caso o chamador ou o ambiente não informem
+      const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
+      const siteUrl = body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+
+      const targetRedirectUrl = siteUrl.startsWith('http://localhost') ? defaultAppUrl : siteUrl
+
+      const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
+        ? targetRedirectUrl
+        : `${targetRedirectUrl.replace(/\/+$/, '')}/auth/callback`
+
       const { data: inviteData, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(
         email,
         {
@@ -145,7 +162,7 @@ Deno.serve(async (req: Request) => {
             perfil,
             funcao,
           },
-          redirectTo: siteUrl,
+          redirectTo: finalCallbackUrl,
         },
       )
 
@@ -197,6 +214,100 @@ Deno.serve(async (req: Request) => {
           success: true,
           message: 'Convite enviado com sucesso.',
           userId: newUserId,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    // ACTION: RESEND INVITE
+    if (body.action === 'resend_invite') {
+      const email = body.email?.trim().toLowerCase()
+      if (!email) {
+        return new Response(JSON.stringify({ error: 'Informe o e-mail do usuário.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Buscar perfil existente
+      const { data: userProfile, error: profErr } = await adminClient
+        .from('profiles')
+        .select('id, nome, telefone, perfil, funcao, situacao')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (profErr || !userProfile) {
+        return new Response(JSON.stringify({ error: 'Usuário não encontrado na base de dados.' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      if (userProfile.situacao === 'inativo') {
+        return new Response(
+          JSON.stringify({
+            error: 'Este usuário está inativo. Reative o usuário antes de reenviar o convite.',
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
+      const siteUrl = body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+
+      const targetRedirectUrl = siteUrl.startsWith('http://localhost') ? defaultAppUrl : siteUrl
+
+      const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
+        ? targetRedirectUrl
+        : `${targetRedirectUrl.replace(/\/+$/, '')}/auth/callback`
+
+      // 1. Tenta reenviar convite diretamente via inviteUserByEmail
+      const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, {
+        data: {
+          nome: userProfile.nome,
+          name: userProfile.nome,
+          telefone: userProfile.telefone,
+          perfil: userProfile.perfil,
+          funcao: userProfile.funcao,
+        },
+        redirectTo: finalCallbackUrl,
+      })
+
+      // Se o usuário já tiver sido registrado/confirmado, inviteUserByEmail pode dar erro:
+      // "A user with this email address has already been registered"
+      // Nesses casos, geramos link de recovery para permitir que ele defina/redefina a senha
+      if (inviteErr) {
+        console.warn(
+          'inviteUserByEmail retornou ao reenviar, usando resetPasswordForEmail:',
+          inviteErr.message,
+        )
+
+        const { error: resetErr } = await adminClient.auth.resetPasswordForEmail(email, {
+          redirectTo: `${finalCallbackUrl}?type=recovery`,
+        })
+
+        if (resetErr) {
+          return new Response(
+            JSON.stringify({
+              error: `Não foi possível reenviar o link: ${resetErr.message || inviteErr.message}`,
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Link de ativação e definição de senha enviado para ${email}.`,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: `Convite reenviado com sucesso para ${email}.`,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )

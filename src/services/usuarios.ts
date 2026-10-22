@@ -138,10 +138,16 @@ export async function inviteUser(
   input: InviteUserInput,
 ): Promise<{ success: boolean; error: string | null }> {
   try {
+    const defaultUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app/auth/callback'
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const redirectTo =
+      origin && !origin.includes('localhost') ? `${origin}/auth/callback` : defaultUrl
+
     // 1. Tentar chamar Edge Function
     const { data, error } = await supabase.functions.invoke('admin-users', {
       body: {
         action: 'invite',
+        redirectTo,
         ...input,
       },
     })
@@ -162,6 +168,56 @@ export async function inviteUser(
     return { success: true, error: null }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Não foi possível enviar o convite.'
+    return { success: false, error: message }
+  }
+}
+
+/**
+ * Reenvia o convite / link de primeiro acesso por e-mail chamando a Edge Function admin-users.
+ */
+export async function resendInviteUser(
+  email: string,
+  userId?: string,
+): Promise<{ success: boolean; error: string | null; message?: string }> {
+  try {
+    const defaultUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app/auth/callback'
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const redirectTo =
+      origin && !origin.includes('localhost') ? `${origin}/auth/callback` : defaultUrl
+
+    const { data, error } = await supabase.functions.invoke('admin-users', {
+      body: {
+        action: 'resend_invite',
+        email,
+        userId,
+        redirectTo,
+      },
+    })
+
+    if (!error && data?.success) {
+      return {
+        success: true,
+        error: null,
+        message: data.message || `Convite reenviado com sucesso para ${email}.`,
+      }
+    }
+
+    if (error) {
+      const errorMsg = await extrairErroEdge(error)
+      return { success: false, error: errorMsg }
+    }
+
+    if (data?.error) {
+      return { success: false, error: data.error }
+    }
+
+    return {
+      success: true,
+      error: null,
+      message: `Convite reenviado com sucesso para ${email}.`,
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Não foi possível reenviar o convite.'
     return { success: false, error: message }
   }
 }

@@ -1,0 +1,13 @@
+project_id = "ucuxyhbdrlvnqgtrqvas"
+
+[auth]
+enabled = true
+site_url = "https://central-do-fluxo-comercial-ng-bf9f0.goskip.app"
+additional_redirect_urls = [
+  "https://central-do-fluxo-comercial-ng-bf9f0.goskip.app",
+  "https://central-do-fluxo-comercial-ng-bf9f0.goskip.app/**",
+  "https://central-do-fluxo-comercial-ng-bf9f0--preview.goskip.app",
+  "https://central-do-fluxo-comercial-ng-bf9f0--preview.goskip.app/**",
+  "http://localhost:3000",
+  "http://localhost:3000/**",
+]

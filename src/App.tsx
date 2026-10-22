@@ -23,6 +23,8 @@ import Painel from './pages/Painel'
 import Usuarios from './pages/Usuarios'
 import Catalogo from './pages/Catalogo'
 import Fluxos from './pages/Fluxos'
+import AuthCallback from './pages/AuthCallback'
+import DefinirSenha from './pages/DefinirSenha'
 
 const App = () => (
   <BrowserRouter>
@@ -34,6 +36,10 @@ const App = () => (
           <Routes>
             {/* Tela de Login pública */}
             <Route path="/" element={<Index />} />
+
+            {/* Confirmação de e-mail / ativação / troca de senha */}
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/definir-senha" element={<DefinirSenha />} />
 
             {/* Rotas internas protegidas dentro do Layout institucional N&G */}
             <Route element={<ProtectedRoute />}>
