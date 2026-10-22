@@ -179,19 +179,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error }
   }
 
-  // Nome de exibição preferencial
+  // Nome de exibição — sempre do banco (profiles); sem fallback com nome de pessoa real.
+  // T2.01: o fallback anterior ("Louise Faraguti") vazava o nome da executora para
+  // qualquer usuário sem perfil carregado.
   const userDisplayName =
     profile?.nome ||
     (user?.user_metadata?.nome as string | undefined) ||
     (user?.user_metadata?.name as string | undefined) ||
     (user?.user_metadata?.full_name as string | undefined) ||
-    (user?.email ? user.email.split('@')[0].replace('.', ' ') : 'Louise Faraguti')
+    (user?.email ? user.email.split('@')[0].replace('.', ' ') : 'Usuário')
 
-  const perfil =
-    profile?.perfil ||
-    (user?.email === 'louise.faraguti@corretorang.com.br' ? 'Administrador' : null)
+  // Perfil de acesso vem sempre do banco (profiles). T2.01: removido o fallback que
+  // dava Administrador a um e-mail fixo — decisão de perfil não pode morar no frontend.
+  const perfil = profile?.perfil || null
   const funcao = profile?.funcao || null
-  const situacao = profile?.situacao || 'ativo'
+  // T2.01: sem perfil carregado, o usuário é tratado como inativo (não entra).
+  // Antes o padrão implícito era 'ativo'.
+  const situacao = profile?.situacao || 'inativo'
   const isAdmin = perfil === 'Administrador'
   const isGestor = perfil === 'Gestor'
   const isColaborador = perfil === 'Colaborador'

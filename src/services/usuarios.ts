@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase/client'
+import { supabase, } from '@/lib/supabase/client'
+import { FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js'
 import {
   Equipe,
   UserProfile,
@@ -10,6 +11,46 @@ import {
 // Helper seguro para chamadas tipadas enquanto os tipos em Database types não forem sincronizados
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any
+
+/**
+ * T2.01 — caminho de erro obrigatório: extrai a mensagem real devolvida pela edge
+ * function. Sem isso, o supabase-js mostra só o genérico "Edge Function returned a
+ * non-2xx status code" e a mensagem em português da função se perde.
+ */
+export async function extrairErroEdge(error: unknown): Promise<string> {
+  if (error instanceof FunctionsHttpError) {
+    try {
+      // O corpo da resposta vem no context (Response) ou no próprio erro, conforme a versão.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload = await (error as any).json?.().catch(() => null)
+      const body = payload ?? null
+      if (body?.error) return String(body.error)
+      if (body?.message) return String(body.message)
+    } catch {
+      // segue para o fallback abaixo
+    }
+    // Tenta ler o corpo pelo Response bruto, se disponível
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const context = (error as any).context
+    if (context && typeof context.json === 'function') {
+      try {
+        const body = await context.json()
+        if (body?.error) return String(body.error)
+        if (body?.message) return String(body.message)
+      } catch {
+        // segue para o fallback abaixo
+      }
+    }
+    return 'A função de administração recusou o pedido. Veja os logs da função no Supabase para o motivo exato.'
+  }
+  if (error instanceof FunctionsRelayError) {
+    return 'Falha de comunicação com a função de administração. Tente novamente.'
+  }
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return 'Falha ao processar o pedido.'
+}
 
 export interface ProfileEquipeRelation {
   profile_id: string
@@ -110,8 +151,7 @@ export async function inviteUser(
     }
 
     if (error) {
-      console.warn('Falha na invocação da função de admin, tentando tratamento:', error)
-      const errorMsg = data?.error || error.message || 'Falha ao processar convite.'
+      const errorMsg = await extrairErroEdge(error)
       return { success: false, error: errorMsg }
     }
 
@@ -145,32 +185,14 @@ export async function updateUser(
       return { success: true, error: null }
     }
 
-    // Se a edge function falhou, executa no banco usando RLS (o usuário é admin)
-    const updatePayload: Record<string, unknown> = {}
-    if (input.nome !== undefined) updatePayload.nome = input.nome.trim()
-    if (input.telefone !== undefined) updatePayload.telefone = input.telefone.trim() || null
-    if (input.perfil !== undefined) updatePayload.perfil = input.perfil
-    if (input.funcao !== undefined) updatePayload.funcao = input.funcao
-    if (input.situacao !== undefined) updatePayload.situacao = input.situacao
-
-    const { error: dbErr } = await db.from('profiles').update(updatePayload).eq('id', input.userId)
-
-    if (dbErr) {
-      return { success: false, error: dbErr.message }
+    // Se a edge function falhou, mostra a mensagem real dela (em português)
+    if (error) {
+      const errorMsg = await extrairErroEdge(error)
+      return { success: false, error: errorMsg }
     }
 
-    if (Array.isArray(input.equipeIds)) {
-      await db.from('profile_equipes').delete().eq('profile_id', input.userId)
-      if (input.equipeIds.length > 0) {
-        const inserts = input.equipeIds.map((eqId) => ({
-          profile_id: input.userId,
-          equipe_id: eqId,
-        }))
-        const { error: insErr } = await db.from('profile_equipes').insert(inserts)
-        if (insErr) {
-          return { success: false, error: insErr.message }
-        }
-      }
+    if (data?.error) {
+      return { success: false, error: data.error }
     }
 
     return { success: true, error: null }
@@ -208,11 +230,16 @@ export async function toggleUserStatus(
       }
     }
 
-    // Fallback direto via Supabase Client (RLS permite Administrador atualizar)
-    const { error: dbErr } = await db.from('profiles').update({ situacao }).eq('id', userId)
+    // Se a edge function falhou, mostra a mensagem real dela (em português).
+    // T2.01: sem fallback direto ao banco — o toggle precisa do ban/revogação no
+    // auth.users, que só a edge function (service_role) ou o trigger garantem.
+    if (error) {
+      const errorMsg = await extrairErroEdge(error)
+      return { success: false, error: errorMsg }
+    }
 
-    if (dbErr) {
-      return { success: false, error: dbErr.message }
+    if (data?.error) {
+      return { success: false, error: data.error }
     }
 
     return {
