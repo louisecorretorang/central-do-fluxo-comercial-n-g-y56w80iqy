@@ -321,7 +321,8 @@ export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
     setCreatingQuickClient(true)
 
     // A origem do cliente pode herdar da origem se já foi selecionada
-    const origemNome = origens.find((o) => o.id === origemId)?.nome || null
+    const matchedOrigem = origens.find((o) => o.id === origemId)
+    const origemNome = matchedOrigem?.nome || null
 
     const res = await createCliente({
       tipo: quickTipo,
@@ -331,6 +332,7 @@ export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
       cpf: quickTipo === 'PF' ? docDigits : undefined,
       responsavel_comercial_id: responsavelId || profile?.id || undefined,
       origem: origemNome || undefined,
+      origem_id: origemId || undefined,
     })
 
     setCreatingQuickClient(false)

@@ -83,21 +83,69 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
   // Estados da interface
   const [responsaveis, setResponsaveis] = useState<{ id: string; nome: string }[]>([])
   const [origensLeadList, setOrigensLeadList] = useState<OrigemLead[]>([])
+  const [inactiveClientOrigem, setInactiveClientOrigem] = useState<OrigemLead | null>(null)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [duplicateCliente, setDuplicateCliente] = useState<Cliente | null>(null)
 
-  // Carregar lista de responsáveis comerciais e origens de lead cadastradas (apenas ativas - Item 6)
+  // Carregar lista de responsáveis comerciais e origens de lead cadastradas (apenas ativas por padrão)
+  // Se estiver editando um cliente cuja origem está inativa, busca e inclui a origem inativa como opção selecionada
   useEffect(() => {
     if (open) {
       getResponsaveisComerciais().then((res) => {
         if (res.data) setResponsaveis(res.data)
       })
-      getOrigensLead(true).then((res) => {
-        if (res.data) setOrigensLeadList(res.data)
+
+      // Busca origens ativas para a lista padrão
+      getOrigensLead(true).then(async (res) => {
+        const ativas = res.data || []
+        setOrigensLeadList(ativas)
+
+        // Se estiver editando e o cliente possui origem salva
+        if (cliente && (cliente.origem_id || cliente.origem)) {
+          const clientOrigemId = cliente.origem_id
+          const clientOrigemNome = cliente.origem
+
+          const jaEstaNasAtivas = ativas.some(
+            (o) =>
+              (clientOrigemId && o.id === clientOrigemId) ||
+              (clientOrigemNome && o.nome === clientOrigemNome),
+          )
+
+          if (!jaEstaNasAtivas) {
+            // Busca no catálogo completo de origens (ativas + inativas) para encontrar a do cliente
+            const allRes = await getOrigensLead(false)
+            if (allRes.data) {
+              const matched = allRes.data.find(
+                (o) =>
+                  (clientOrigemId && o.id === clientOrigemId) ||
+                  (clientOrigemNome && o.nome.toLowerCase() === clientOrigemNome.toLowerCase()),
+              )
+              if (matched) {
+                setInactiveClientOrigem(matched)
+                setOrigem(matched.id)
+                return
+              }
+            }
+
+            // Fallback se for legado apenas texto sem registro na tabela
+            if (clientOrigemId || clientOrigemNome) {
+              setInactiveClientOrigem({
+                id: clientOrigemId || clientOrigemNome || '',
+                nome: clientOrigemNome || cliente.origem_lead?.nome || clientOrigemId || '',
+                situacao: 'inativa',
+              })
+              setOrigem(clientOrigemId || clientOrigemNome || '')
+            }
+          } else {
+            setInactiveClientOrigem(null)
+          }
+        } else {
+          setInactiveClientOrigem(null)
+        }
       })
     }
-  }, [open])
+  }, [open, cliente])
 
   // Preenche valores ao abrir em modo edição ou reseta ao abrir em modo criação
   useEffect(() => {
@@ -157,6 +205,7 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
         setCidade('')
         setUf('')
         setOrigem('')
+        setInactiveClientOrigem(null)
         setIndicadoPorTipo('')
         setIndicadoPorNome('')
         setResponsavelId('')
@@ -259,8 +308,13 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
 
     setSaving(true)
 
-    // Encontrar se a origem selecionada é um ID do catálogo de origens
-    const matchedOrigem = origensLeadList.find((o) => o.id === origem || o.nome === origem)
+    // Encontrar se a origem selecionada é um ID do catálogo de origens (ativas ou inativa do cliente)
+    const matchedOrigem =
+      origensLeadList.find((o) => o.id === origem || o.nome === origem) ||
+      (inactiveClientOrigem &&
+      (inactiveClientOrigem.id === origem || inactiveClientOrigem.nome === origem)
+        ? inactiveClientOrigem
+        : null)
 
     const payload: ClienteFormData = {
       tipo,
@@ -690,36 +744,63 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {/* Origem (Chave Estrangeira ligada à lista de origens do catálogo - apenas ativas) */}
+              {/* Origem (Chave Estrangeira ligada à lista de origens do catálogo - ativas + inativa vinculada se houver) */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Origem do cliente</Label>
-                <Select
-                  value={
-                    origem && origensLeadList.some((o) => o.id === origem)
-                      ? origem
-                      : origem && origensLeadList.some((o) => o.nome === origem)
-                        ? origensLeadList.find((o) => o.nome === origem)?.id || origem
-                        : origem || 'none'
-                  }
-                  onValueChange={(val) => setOrigem(val === 'none' ? '' : val)}
-                >
-                  <SelectTrigger className="h-10 rounded-xl text-sm border-slate-200">
-                    <SelectValue placeholder="Selecione a origem do catálogo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Não informada</SelectItem>
-                    {/* Se o cliente tinha um valor legado que não está na lista de ativas, preserva */}
-                    {origem &&
-                      !origensLeadList.some((o) => o.id === origem || o.nome === origem) && (
-                        <SelectItem value={origem}>{origem}</SelectItem>
-                      )}
-                    {origensLeadList.map((origemItem) => (
-                      <SelectItem key={origemItem.id} value={origemItem.id}>
-                        {origemItem.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  // Determina valor do Select
+                  const selectValue = (() => {
+                    if (!origem) return 'none'
+                    if (origensLeadList.some((o) => o.id === origem)) return origem
+                    const matchAtivaNome = origensLeadList.find((o) => o.nome === origem)
+                    if (matchAtivaNome) return matchAtivaNome.id
+                    if (
+                      inactiveClientOrigem &&
+                      (inactiveClientOrigem.id === origem || inactiveClientOrigem.nome === origem)
+                    ) {
+                      return inactiveClientOrigem.id
+                    }
+                    return origem
+                  })()
+
+                  return (
+                    <Select
+                      value={selectValue}
+                      onValueChange={(val) => setOrigem(val === 'none' ? '' : val)}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm border-slate-200">
+                        <SelectValue placeholder="Selecione a origem do catálogo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Não informada</SelectItem>
+
+                        {/* Se o cliente tem uma origem inativa cadastrada que não está na lista de ativas, exibe como opção selecionável com indicação */}
+                        {inactiveClientOrigem &&
+                          !origensLeadList.some((o) => o.id === inactiveClientOrigem.id) && (
+                            <SelectItem
+                              key={inactiveClientOrigem.id}
+                              value={inactiveClientOrigem.id}
+                            >
+                              {inactiveClientOrigem.nome} (Inativa)
+                            </SelectItem>
+                          )}
+
+                        {/* Se o cliente tinha um valor legado texto que não combinou com nenhum registro */}
+                        {origem &&
+                          !inactiveClientOrigem &&
+                          !origensLeadList.some((o) => o.id === origem || o.nome === origem) && (
+                            <SelectItem value={origem}>{origem} (Inativa)</SelectItem>
+                          )}
+
+                        {origensLeadList.map((origemItem) => (
+                          <SelectItem key={origemItem.id} value={origemItem.id}>
+                            {origemItem.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )
+                })()}
               </div>
 
               {/* Responsável Comercial */}

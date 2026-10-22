@@ -108,14 +108,21 @@ export default function Catalogo() {
   const filteredOrigens = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     if (!term) return origens
-    return origens.filter((o) => o.nome.toLowerCase().includes(term))
+    return origens.filter(
+      (o) =>
+        o.nome.toLowerCase().includes(term) ||
+        (o.situacao && o.situacao.toLowerCase().includes(term)),
+    )
   }, [origens, searchTerm])
 
   const filteredMotivos = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
     if (!term) return motivos
     return motivos.filter(
-      (m) => m.nome.toLowerCase().includes(term) || m.tipo.toLowerCase().includes(term),
+      (m) =>
+        m.nome.toLowerCase().includes(term) ||
+        m.tipo.toLowerCase().includes(term) ||
+        (m.situacao && m.situacao.toLowerCase().includes(term)),
     )
   }, [motivos, searchTerm])
 
@@ -172,19 +179,28 @@ export default function Catalogo() {
     }
   }
 
-  const getSituacaoBadge = (situacao: string) => {
-    if (situacao === 'ativa') {
+  const getSituacaoBadge = (situacao: string, genero: 'fem' | 'masc' = 'fem') => {
+    const isAtivo = situacao === 'ativa'
+    const texto = isAtivo
+      ? genero === 'masc'
+        ? 'Ativo'
+        : 'Ativa'
+      : genero === 'masc'
+        ? 'Inativo'
+        : 'Inativa'
+
+    if (isAtivo) {
       return (
         <Badge className="bg-emerald-50 text-emerald-800 hover:bg-emerald-50 border-emerald-200 font-semibold text-[11px] gap-1 px-2.5 py-0.5">
           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-          Ativa
+          {texto}
         </Badge>
       )
     }
     return (
       <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 border-slate-300 font-medium text-[11px] gap-1 px-2.5 py-0.5">
         <XCircle className="w-3 h-3 text-slate-400" />
-        Inativa
+        {texto}
       </Badge>
     )
   }
@@ -545,6 +561,7 @@ export default function Catalogo() {
                         <TableHead className="font-bold text-[#0C2D48] text-xs">
                           Finalidade
                         </TableHead>
+                        <TableHead className="font-bold text-[#0C2D48] text-xs">Situação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -564,6 +581,7 @@ export default function Catalogo() {
                               Disponível no cadastro de clientes e oportunidades
                             </span>
                           </TableCell>
+                          <TableCell>{getSituacaoBadge(o.situacao, 'fem')}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -616,6 +634,7 @@ export default function Catalogo() {
                         <TableHead className="font-bold text-[#0C2D48] text-xs">
                           Tipo de motivo
                         </TableHead>
+                        <TableHead className="font-bold text-[#0C2D48] text-xs">Situação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -631,6 +650,7 @@ export default function Catalogo() {
                             </div>
                           </TableCell>
                           <TableCell>{getMotivoTipoBadge(m.tipo)}</TableCell>
+                          <TableCell>{getSituacaoBadge(m.situacao, 'masc')}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
