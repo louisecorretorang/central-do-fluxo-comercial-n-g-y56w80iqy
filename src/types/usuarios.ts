@@ -37,6 +37,7 @@ export interface UpdateUserInput {
   telefone?: string
   perfil?: UserPerfil
   funcao?: UserFuncao
-  situacao?: UserSituacao
+  // T2.01 — CA-1-08: 'situacao' saiu daqui. Mudança de situação só pela ação
+  // toggle_status (desativar/reativar), que também bane/desbane em auth.users.
   equipeIds?: string[]
 }

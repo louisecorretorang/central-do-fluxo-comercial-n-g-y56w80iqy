@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
 
     // ACTION: UPDATE
     if (body.action === 'update') {
-      const { userId, nome, telefone, perfil, funcao, situacao, equipeIds } = body
+      const { userId, nome, telefone, perfil, funcao, equipeIds } = body
 
       if (!userId) {
         return new Response(JSON.stringify({ error: 'ID do usuário não fornecido.' }), {
@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      // Se estiver alterando a própria conta, validar que não pode se rebaixar ou desativar
+      // Se estiver alterando a própria conta, validar que não pode se rebaixar
       if (callerUser.id === userId) {
         if (perfil && perfil !== 'Administrador') {
           return new Response(
@@ -221,20 +221,17 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
           )
         }
-        if (situacao && situacao === 'inativo') {
-          return new Response(
-            JSON.stringify({ error: 'Você não pode desativar sua própria conta.' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          )
-        }
       }
+
+      // T2.01 — CA-1-08: 'situacao' NÃO pode mudar por aqui. A alteração de situação
+      // só acontece pela ação toggle_status, que também bane/desbane em auth.users.
+      // Antes, update com situacao = 'inativo' deixava o usuário sem sessão revogada.
 
       const updateData: Record<string, unknown> = {}
       if (nome !== undefined) updateData.nome = nome.trim()
       if (telefone !== undefined) updateData.telefone = telefone.trim() || null
       if (perfil !== undefined) updateData.perfil = perfil
       if (funcao !== undefined) updateData.funcao = funcao
-      if (situacao !== undefined) updateData.situacao = situacao
 
       if (Object.keys(updateData).length > 0) {
         const { error: updateErr } = await adminClient
@@ -258,6 +255,8 @@ Deno.serve(async (req: Request) => {
         if (telefone !== undefined) metadataUpdate.telefone = telefone.trim() || null
         if (perfil !== undefined) metadataUpdate.perfil = perfil
         if (funcao !== undefined) metadataUpdate.funcao = funcao
+        // T2.01: metadataUpdate não inclui 'situacao' — mudança de situação só via
+        // toggle_status, que grava o ban em auth.users (ver adiante nesta função).
 
         if (Object.keys(metadataUpdate).length > 0) {
           await adminClient.auth.admin.updateUserById(userId, {
@@ -315,6 +314,32 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({ error: 'Não foi possível alterar a situação do usuário.' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
+      }
+
+      // T2.01 — CA-1-08: bloqueio do inativo garantido no servidor.
+      // O trigger trg_profiles_situacao_login_ban (migração
+      // 20261020110000_t201_bloqueio_inativo.sql) já faz isso no banco para qualquer
+      // caminho; aqui repetimos via API de admin para não depender só do trigger
+      // (defesa em profundidade) e para o efeito ser imediato na edge function.
+      if (situacao === 'inativo') {
+        const { error: banErr } = await adminClient.auth.admin.updateUserById(userId, {
+          ban_duration: '876000h', // ~100 anos; o trigger remove ao reativar
+        })
+        if (banErr) {
+          console.error('Erro ao banir usuário inativo:', banErr)
+        }
+        // Revoga os refresh tokens: a sessão aberta não renova.
+        const { error: logoutErr } = await adminClient.auth.admin.signOut(userId)
+        if (logoutErr) {
+          console.error('Erro ao revogar sessões do usuário inativo:', logoutErr)
+        }
+      } else {
+        const { error: unbanErr } = await adminClient.auth.admin.updateUserById(userId, {
+          ban_duration: 'none',
+        })
+        if (unbanErr) {
+          console.error('Erro ao remover ban do usuário reativado:', unbanErr)
+        }
       }
 
       const message =
