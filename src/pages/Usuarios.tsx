@@ -63,8 +63,6 @@ export default function Usuarios() {
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
   const [statusUser, setStatusUser] = useState<UserProfile | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
-  const [resendingUserId, setResendingUserId] = useState<string | null>(null)
-
   // Carregar dados
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -121,10 +119,41 @@ export default function Usuarios() {
     return res
   }
 
+  const [resendingUserIdsState, setResendingUserIdsState] = useState<Record<string, boolean>>({})
+
+  // Helper para verificar se um usuário específico está com reenvio em andamento
+  const isResendingUser = (userId: string) => Boolean(resendingUserIdsState[userId])
+
+  // Tratamento de mensagens amigáveis em português para erros de envio / limite
+  const formatResendInviteError = (rawError?: string | null): string => {
+    if (!rawError) {
+      return 'Não foi possível reenviar o convite. Tente novamente mais tarde.'
+    }
+
+    const lower = rawError.toLowerCase()
+
+    // Caso de limite de taxa do Supabase Auth (ex.: email rate limit exceeded, 429, etc.)
+    if (
+      lower.includes('rate limit') ||
+      lower.includes('email_rate_limit') ||
+      lower.includes('rate_limit') ||
+      lower.includes('429') ||
+      lower.includes('over_email_send_rate_limit') ||
+      lower.includes('too many requests')
+    ) {
+      return 'Muitos envios em pouco tempo. Aguarde alguns minutos e tente de novo. Verifique também se o e-mail já não chegou na caixa de entrada ou no spam.'
+    }
+
+    // Se o backend retornou mensagem já tratada ou outro erro
+    return rawError
+  }
+
   // Ação de reenviar convite
   const handleResendInvite = async (user: UserProfile) => {
-    if (resendingUserId) return
-    setResendingUserId(user.id)
+    // Evita duplo clique para este usuário específico
+    if (resendingUserIdsState[user.id]) return
+
+    setResendingUserIdsState((prev) => ({ ...prev, [user.id]: true }))
     try {
       const res = await resendInviteUser(user.email, user.id)
       if (res.success) {
@@ -136,17 +165,21 @@ export default function Usuarios() {
         toast({
           variant: 'destructive',
           title: 'Erro ao reenviar convite',
-          description: res.error || 'Não foi possível reenviar o convite.',
+          description: formatResendInviteError(res.error),
         })
       }
     } catch {
       toast({
         variant: 'destructive',
-        title: 'Erro',
-        description: 'Falha na conexão. Tente novamente.',
+        title: 'Erro ao reenviar convite',
+        description: 'Falha na conexão. Verifique sua internet e tente novamente.',
       })
     } finally {
-      setResendingUserId(null)
+      setResendingUserIdsState((prev) => {
+        const next = { ...prev }
+        delete next[user.id]
+        return next
+      })
     }
   }
 
@@ -516,20 +549,22 @@ export default function Usuarios() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleResendInvite(u)}
-                              disabled={isInactive || resendingUserId === u.id}
+                              disabled={isInactive || isResendingUser(u.id)}
                               className="h-8 px-2.5 text-xs text-teal-700 hover:text-teal-800 hover:bg-teal-50 rounded-lg flex items-center gap-1"
                               title={
                                 isInactive
                                   ? 'Reative o usuário para reenviar o convite'
-                                  : 'Reenviar link de ativação / acesso por e-mail'
+                                  : isResendingUser(u.id)
+                                    ? 'Reenviando convite...'
+                                    : 'Reenviar link de ativação / acesso por e-mail'
                               }
                             >
-                              {resendingUserId === u.id ? (
+                              {isResendingUser(u.id) ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
                               ) : (
                                 <Send className="w-3.5 h-3.5 text-teal-600" />
                               )}
-                              <span>Reenviar</span>
+                              <span>{isResendingUser(u.id) ? 'Reenviando...' : 'Reenviar'}</span>
                             </Button>
                           )}
 
@@ -698,16 +733,16 @@ export default function Usuarios() {
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={isInactive || resendingUserId === u.id}
+                          disabled={isInactive || isResendingUser(u.id)}
                           onClick={() => handleResendInvite(u)}
                           className="flex-1 h-9 rounded-xl text-xs font-semibold text-teal-700 border-teal-200 hover:bg-teal-50 flex items-center justify-center gap-1.5"
                         >
-                          {resendingUserId === u.id ? (
+                          {isResendingUser(u.id) ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
                           ) : (
                             <Send className="w-3.5 h-3.5 text-teal-600" />
                           )}
-                          <span>Reenviar</span>
+                          <span>{isResendingUser(u.id) ? 'Reenviando...' : 'Reenviar'}</span>
                         </Button>
                       )}
 
