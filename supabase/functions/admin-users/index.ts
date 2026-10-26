@@ -144,9 +144,11 @@ Deno.serve(async (req: Request) => {
       // Envia convite por e-mail através da API de Admin do Supabase
       // Sempre usar URL pública de produção caso o chamador ou o ambiente não informem
       const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
-      const siteUrl = body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+      const rawSiteUrl =
+        body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
 
-      const targetRedirectUrl = siteUrl.startsWith('http://localhost') ? defaultAppUrl : siteUrl
+      const targetRedirectUrl =
+        !rawSiteUrl || rawSiteUrl.includes('localhost') ? defaultAppUrl : rawSiteUrl
 
       const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
         ? targetRedirectUrl
@@ -161,6 +163,8 @@ Deno.serve(async (req: Request) => {
             telefone,
             perfil,
             funcao,
+            redirect_to: finalCallbackUrl,
+            redirectTo: finalCallbackUrl,
           },
           redirectTo: finalCallbackUrl,
         },
@@ -253,15 +257,18 @@ Deno.serve(async (req: Request) => {
       }
 
       const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
-      const siteUrl = body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+      const rawSiteUrl =
+        body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
 
-      const targetRedirectUrl = siteUrl.startsWith('http://localhost') ? defaultAppUrl : siteUrl
+      const targetRedirectUrl =
+        !rawSiteUrl || rawSiteUrl.includes('localhost') ? defaultAppUrl : rawSiteUrl
 
       const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
         ? targetRedirectUrl
         : `${targetRedirectUrl.replace(/\/+$/, '')}/auth/callback`
 
       // 1. Tenta reenviar convite diretamente via inviteUserByEmail
+      // Passa redirectTo tanto na raiz de options quanto em data para máxima compatibilidade
       const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, {
         data: {
           nome: userProfile.nome,
@@ -269,21 +276,27 @@ Deno.serve(async (req: Request) => {
           telefone: userProfile.telefone,
           perfil: userProfile.perfil,
           funcao: userProfile.funcao,
+          redirect_to: finalCallbackUrl,
+          redirectTo: finalCallbackUrl,
         },
         redirectTo: finalCallbackUrl,
       })
 
       // Se o usuário já tiver sido registrado/confirmado, inviteUserByEmail pode dar erro:
       // "A user with this email address has already been registered"
-      // Nesses casos, geramos link de recovery para permitir que ele defina/redefina a senha
+      // Nesses casos, usamos resetPasswordForEmail
       if (inviteErr) {
         console.warn(
           'inviteUserByEmail retornou ao reenviar, usando resetPasswordForEmail:',
           inviteErr.message,
         )
 
+        const recoveryRedirect = `${finalCallbackUrl}${
+          finalCallbackUrl.includes('?') ? '&' : '?'
+        }type=recovery`
+
         const { error: resetErr } = await adminClient.auth.resetPasswordForEmail(email, {
-          redirectTo: `${finalCallbackUrl}?type=recovery`,
+          redirectTo: recoveryRedirect,
         })
 
         if (resetErr) {
