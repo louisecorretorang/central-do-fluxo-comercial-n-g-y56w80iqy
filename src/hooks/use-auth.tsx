@@ -174,8 +174,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const resetPassword = async (email: string) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const defaultUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
+    const baseUrl = origin && !origin.includes('localhost') ? origin : defaultUrl
+    const recoveryRedirect = `${baseUrl.replace(/\/+$/, '')}/auth/callback?type=recovery`
+
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+      redirectTo: recoveryRedirect,
     })
     return { error }
   }

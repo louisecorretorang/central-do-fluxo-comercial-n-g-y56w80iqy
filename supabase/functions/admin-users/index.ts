@@ -59,6 +59,12 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
     // 1. Verificar caller usando anon client com token JWT do chamador
+    // 2. Client com service_role para executar operações com poderes elevados
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+
+    // 1. Verificar caller usando anon client com token JWT do chamador
     const callerClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { persistSession: false },
@@ -75,11 +81,6 @@ Deno.serve(async (req: Request) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-
-    // 2. Client com service_role para executar operações com poderes elevados
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
 
     // 3. Checar se o chamador é Administrador ativo
     const { data: callerProfile, error: profileErr } = await adminClient
@@ -144,15 +145,23 @@ Deno.serve(async (req: Request) => {
       // Envia convite por e-mail através da API de Admin do Supabase
       // Sempre usar URL pública de produção caso o chamador ou o ambiente não informem
       const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
-      const rawSiteUrl =
-        body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+      const rawEnvUrl = Deno.env.get('SITE_URL')?.trim()
+      const rawBodyUrl = body.redirectTo?.trim()
 
-      const targetRedirectUrl =
-        !rawSiteUrl || rawSiteUrl.includes('localhost') ? defaultAppUrl : rawSiteUrl
+      let resolvedBaseUrl = defaultAppUrl
+      if (rawEnvUrl && !rawEnvUrl.includes('localhost')) {
+        resolvedBaseUrl = rawEnvUrl
+      } else if (rawBodyUrl && !rawBodyUrl.includes('localhost')) {
+        resolvedBaseUrl = rawBodyUrl
+      }
 
-      const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
-        ? targetRedirectUrl
-        : `${targetRedirectUrl.replace(/\/+$/, '')}/auth/callback`
+      resolvedBaseUrl = resolvedBaseUrl.replace(/\/+$/, '')
+
+      const finalCallbackUrl = resolvedBaseUrl.includes('/auth/callback')
+        ? resolvedBaseUrl
+        : `${resolvedBaseUrl}/auth/callback`
+
+      console.log(`[invite] target email: ${email}, finalCallbackUrl: ${finalCallbackUrl}`)
 
       const { data: inviteData, error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(
         email,
@@ -233,12 +242,36 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      // Buscar perfil existente
-      const { data: userProfile, error: profErr } = await adminClient
+      // Buscar perfil existente (por e-mail ou nome para tolerar 'colaborador seguros')
+      let userProfile: {
+        id: string
+        nome: string
+        telefone: string | null
+        perfil: string
+        funcao: string
+        situacao: string
+        email: string
+      } | null = null
+
+      const { data: byEmail, error: profErr } = await adminClient
         .from('profiles')
-        .select('id, nome, telefone, perfil, funcao, situacao')
+        .select('id, nome, telefone, perfil, funcao, situacao, email')
         .eq('email', email)
         .maybeSingle()
+
+      if (byEmail) {
+        userProfile = byEmail
+      } else {
+        // Tenta buscar por nome se o email fornecido for um alias ou nickname
+        const { data: byName } = await adminClient
+          .from('profiles')
+          .select('id, nome, telefone, perfil, funcao, situacao, email')
+          .ilike('nome', email)
+          .maybeSingle()
+        if (byName) {
+          userProfile = byName
+        }
+      }
 
       if (profErr || !userProfile) {
         return new Response(JSON.stringify({ error: 'Usuário não encontrado na base de dados.' }), {
@@ -246,6 +279,8 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+
+      const targetEmail = userProfile.email
 
       if (userProfile.situacao === 'inativo') {
         return new Response(
@@ -257,19 +292,66 @@ Deno.serve(async (req: Request) => {
       }
 
       const defaultAppUrl = 'https://central-do-fluxo-comercial-ng-bf9f0.goskip.app'
-      const rawSiteUrl =
-        body.redirectTo?.trim() || Deno.env.get('SITE_URL')?.trim() || defaultAppUrl
+      const rawEnvUrl = Deno.env.get('SITE_URL')?.trim()
+      const rawBodyUrl = body.redirectTo?.trim()
 
-      const targetRedirectUrl =
-        !rawSiteUrl || rawSiteUrl.includes('localhost') ? defaultAppUrl : rawSiteUrl
+      // Ordem de preferência:
+      // 1. Deno.env.get('SITE_URL') (se válido e sem localhost)
+      // 2. body.redirectTo (se válido e sem localhost)
+      // 3. defaultAppUrl (hardcoded https://central-do-fluxo-comercial-ng-bf9f0.goskip.app)
+      let resolvedBaseUrl = defaultAppUrl
+      if (rawEnvUrl && !rawEnvUrl.includes('localhost')) {
+        resolvedBaseUrl = rawEnvUrl
+      } else if (rawBodyUrl && !rawBodyUrl.includes('localhost')) {
+        resolvedBaseUrl = rawBodyUrl
+      }
 
-      const finalCallbackUrl = targetRedirectUrl.includes('/auth/callback')
-        ? targetRedirectUrl
-        : `${targetRedirectUrl.replace(/\/+$/, '')}/auth/callback`
+      // Garante que não haja trailing slash
+      resolvedBaseUrl = resolvedBaseUrl.replace(/\/+$/, '')
+
+      // Monta /auth/callback preservando query params se já vierem
+      const finalCallbackUrl = resolvedBaseUrl.includes('/auth/callback')
+        ? resolvedBaseUrl
+        : `${resolvedBaseUrl}/auth/callback`
+
+      const recoveryRedirect = `${finalCallbackUrl}${
+        finalCallbackUrl.includes('?') ? '&' : '?'
+      }type=recovery`
+
+      // Se for modo apenas de verificação (dry-run para testes sem disparar e-mail nem consumir rate limits)
+      // Também gera um recovery link via admin.generateLink para inspeção exata de parâmetros sem envio por email
+      // @ts-expect-error dryRun opcional
+      if (body.dryRun === true) {
+        const { data: linkData, error: linkErr } = await adminClient.auth.admin.generateLink({
+          type: 'recovery',
+          email: targetEmail,
+          options: {
+            redirectTo: recoveryRedirect,
+          },
+        })
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            dryRun: true,
+            targetEmail,
+            resolvedRedirectUrl: recoveryRedirect,
+            finalCallbackUrl,
+            siteUrlEnv: rawEnvUrl || null,
+            generatedActionLink: linkData?.properties?.action_link || null,
+            linkError: linkErr ? linkErr.message : null,
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      console.log(
+        `[resend_invite] target email: ${targetEmail}, finalCallbackUrl: ${finalCallbackUrl}`,
+      )
 
       // 1. Tenta reenviar convite diretamente via inviteUserByEmail
       // Passa redirectTo tanto na raiz de options quanto em data para máxima compatibilidade
-      const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(email, {
+      const { error: inviteErr } = await adminClient.auth.admin.inviteUserByEmail(targetEmail, {
         data: {
           nome: userProfile.nome,
           name: userProfile.nome,
@@ -291,11 +373,11 @@ Deno.serve(async (req: Request) => {
           inviteErr.message,
         )
 
-        const recoveryRedirect = `${finalCallbackUrl}${
-          finalCallbackUrl.includes('?') ? '&' : '?'
-        }type=recovery`
+        console.log(
+          `[resend_invite] calling resetPasswordForEmail with redirectTo: ${recoveryRedirect}`,
+        )
 
-        const { error: resetErr } = await adminClient.auth.resetPasswordForEmail(email, {
+        const { error: resetErr } = await adminClient.auth.resetPasswordForEmail(targetEmail, {
           redirectTo: recoveryRedirect,
         })
 
@@ -311,7 +393,8 @@ Deno.serve(async (req: Request) => {
         return new Response(
           JSON.stringify({
             success: true,
-            message: `Link de ativação e definição de senha enviado para ${email}.`,
+            message: `Link de ativação e definição de senha enviado para ${targetEmail}.`,
+            resolvedRedirectUrl: recoveryRedirect,
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         )
@@ -320,7 +403,8 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Convite reenviado com sucesso para ${email}.`,
+          message: `Convite reenviado com sucesso para ${targetEmail}.`,
+          resolvedRedirectUrl: finalCallbackUrl,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
