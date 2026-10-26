@@ -132,6 +132,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [loadProfile])
 
+  // T2.01 — constituição (tudo em português, sem termos técnicos): o Supabase Auth
+  // devolve mensagens em inglês; traduzimos as conhecidas antes de mostrar na tela.
+  // "Database error querying schema" é o erro que o GoTrue devolve para usuário
+  // banido (conta desativada) — não é falha real de banco na prática do dia a dia.
+  const traduzErroLogin = (msg: string): string => {
+    const m = (msg || '').toLowerCase()
+    if (m.includes('invalid login credentials')) {
+      return 'E-mail ou senha incorretos.'
+    }
+    if (m.includes('database error querying schema')) {
+      return 'Não foi possível validar seu acesso. Se sua conta foi desativada recentemente, fale com um administrador.'
+    }
+    if (m.includes('email not confirmed')) {
+      return 'Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada.'
+    }
+    if (m.includes('too many requests')) {
+      return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
+    }
+    if (m.includes('email logins are disabled') || m.includes('signups not allowed')) {
+      return 'O acesso por e-mail está desativado neste momento. Fale com um administrador.'
+    }
+    return 'Não foi possível entrar. Tente novamente em instantes.'
+  }
+
   const signIn = async (email: string, password: string) => {
     const cleanEmail = email.trim().toLowerCase()
 
@@ -142,7 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })
 
     if (authError) {
-      return { error: authError }
+      return { error: new Error(traduzErroLogin(authError.message)) }
     }
 
     if (authData.user) {
