@@ -106,6 +106,10 @@ export default function OportunidadeDetalhes() {
   }
 
   if (error || !opp) {
+    // T2.04 — antes esta tela dizia "sem acesso" no título e, logo abaixo, mostrava
+    // "Houve uma instabilidade temporária" com botão "Tentar novamente". Como a RLS
+    // devolve zero linhas (não erro) quando falta permissão, este caminho só é alcançado
+    // por permissão ou por recurso inexistente — repetir não resolve.
     return (
       <PageStateLayout
         title="Oportunidade não encontrada"
@@ -115,7 +119,9 @@ export default function OportunidadeDetalhes() {
         actionLabel="Voltar para Oportunidades"
         onAction={() => navigate('/oportunidades')}
         status="error"
-        onRetry={() => fetchOportunidade(false)}
+        errorTitle="Você não tem acesso a esta oportunidade"
+        errorMessage="Ela não existe ou não faz parte das oportunidades que você pode ver. Se precisar trabalhar nela, fale com o responsável comercial ou com um administrador."
+        hideRetry
       />
     )
   }

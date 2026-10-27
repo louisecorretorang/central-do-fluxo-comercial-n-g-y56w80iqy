@@ -1,9 +1,23 @@
 import React from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { Loader2 } from 'lucide-react'
 import NGLogo from '@/components/NGLogo'
+import SemAcesso from '@/pages/SemAcesso'
 
+/**
+ * T2.04 — guarda das rotas de administrador (Usuários e Configurações).
+ *
+ * Antes: quem não era administrador era redirecionado para /minha-fila sem nenhuma
+ * explicação — não dava para saber se o endereço estava errado, se o acesso foi perdido
+ * ou se o sistema falhou.
+ *
+ * Agora: mostra a tela de "sem acesso", com uma saída clara. O bloqueio continua
+ * exatamente o mesmo; muda só o que a pessoa vê.
+ *
+ * Importante: SemAcesso é renderizado aqui, e a rota /sem-acesso NÃO fica dentro deste
+ * guard (ver App.tsx) — se ficasse, entraria em laço.
+ */
 export const AdminRoute: React.FC = () => {
   const { loading, isAdmin } = useAuth()
 
@@ -21,9 +35,10 @@ export const AdminRoute: React.FC = () => {
     )
   }
 
-  // Apenas Administrador tem permissão para acessar
+  // Apenas Administrador tem permissão para acessar.
+  // Dentro do Layout (menu e marca já visíveis), então o painel vai no modo inline.
   if (!isAdmin) {
-    return <Navigate to="/minha-fila" replace />
+    return <SemAcesso fullPage={false} />
   }
 
   return <Outlet />

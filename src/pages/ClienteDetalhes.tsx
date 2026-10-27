@@ -198,6 +198,10 @@ export default function ClienteDetalhes() {
 
   // 2. Erro ou Não encontrado
   if (error || !cliente) {
+    // T2.04 — mesma correção da ficha da oportunidade: esta tela existe para o caso
+    // "não achei / não posso ver". Repetir a busca não muda o resultado, então o botão
+    // "Tentar novamente" não aparece mais. A RLS devolve zero linhas em vez de erro,
+    // então chegar aqui significa permissão ou registro inexistente.
     return (
       <PageStateLayout
         title="Cliente não encontrado"
@@ -207,7 +211,9 @@ export default function ClienteDetalhes() {
         actionLabel="Voltar para Clientes"
         onAction={() => navigate('/clientes')}
         status="error"
-        onRetry={fetchCliente}
+        errorTitle="Você não tem acesso a este cliente"
+        errorMessage="Ele não existe ou não está entre os clientes que você pode ver. Se precisar trabalhar nele, fale com o responsável comercial ou com um administrador."
+        hideRetry
       />
     )
   }
