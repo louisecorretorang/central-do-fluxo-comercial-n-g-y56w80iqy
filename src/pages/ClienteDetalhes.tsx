@@ -1,10 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import {
-  getClienteById,
-  toggleClienteSituacao,
-  setContatoPrincipal,
-} from '@/services/clientes'
+import { getClienteById, toggleClienteSituacao, setContatoPrincipal } from '@/services/clientes'
 import { getOportunidades } from '@/services/oportunidades'
 import { Cliente, ClienteContato } from '@/types/clientes'
 import { OportunidadeResumo } from '@/types/oportunidades'
@@ -836,8 +832,6 @@ export default function ClienteDetalhes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      
     </div>
   )
 }
