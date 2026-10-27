@@ -780,10 +780,9 @@ export async function uploadChecklistAnexo(params: {
       console.error('Erro no upload para o storage:', uploadErr)
       // T2.03 — quando a política do bucket nega, o Storage responde com mensagem
       // técnica (RLS/policy). A constituição do projeto proíbe termo técnico na tela.
-      const negado =
-        /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
-          uploadErr.message || '',
-        )
+      const negado = /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
+        uploadErr.message || '',
+      )
       return {
         data: null,
         error: negado
@@ -878,10 +877,9 @@ export async function getDownloadAnexoUrl(
       console.error('Erro ao gerar URL assinada:', error)
       // T2.03 — a política do bucket agora exige ver a oportunidade. Quando ela nega,
       // o Supabase devolve erro técnico; a tela mostra linguagem de negócio.
-      const negado =
-        /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
-          error?.message || '',
-        )
+      const negado = /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
+        error?.message || '',
+      )
       return {
         url: null,
         error: negado
