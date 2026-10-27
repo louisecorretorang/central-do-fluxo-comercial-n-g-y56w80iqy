@@ -967,7 +967,7 @@ export async function voltarEtapaOportunidade(params: {
   try {
     const { error } = await db.rpc('voltar_etapa_oportunidade', {
       p_oportunidade_id: params.oportunidade_id,
-      p_atual: params.etapa_atual_id,
+      p_etapa_atual_id: params.etapa_atual_id,
       p_motivo: params.motivo.trim(),
     })
 
