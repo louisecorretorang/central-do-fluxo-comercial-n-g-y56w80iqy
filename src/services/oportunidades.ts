@@ -778,7 +778,18 @@ export async function uploadChecklistAnexo(params: {
 
     if (uploadErr) {
       console.error('Erro no upload para o storage:', uploadErr)
-      return { data: null, error: uploadErr.message }
+      // T2.03 — quando a política do bucket nega, o Storage responde com mensagem
+      // técnica (RLS/policy). A constituição do projeto proíbe termo técnico na tela.
+      const negado =
+        /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
+          uploadErr.message || '',
+        )
+      return {
+        data: null,
+        error: negado
+          ? 'Você não tem permissão para anexar arquivo nesta oportunidade.'
+          : uploadErr.message,
+      }
     }
 
     const now = new Date().toISOString()
@@ -845,19 +856,38 @@ export async function uploadChecklistAnexo(params: {
 }
 
 /**
- * Gera URL assinada temporária para download do anexo privado
+ * Gera URL assinada temporária para download do anexo privado.
+ *
+ * T2.03 — a SPEC exige link "válido por minutos". Antes eram 3600s (1 hora), tempo
+ * demais para um link que dá acesso a documento de cliente: quem copiasse a URL
+ * continuava baixando por uma hora, mesmo sem permissão nenhuma. 300s (5 min) cobre
+ * o uso real (abrir e baixar em seguida) sem virar link compartilhável.
  */
+export const VALIDADE_LINK_DOWNLOAD_SEGUNDOS = 300
+
 export async function getDownloadAnexoUrl(
   filePath: string,
+  validadeSegundos: number = VALIDADE_LINK_DOWNLOAD_SEGUNDOS,
 ): Promise<{ url: string | null; error: string | null }> {
   try {
     const { data, error } = await supabase.storage
       .from('oportunidades-anexos')
-      .createSignedUrl(filePath, 3600) // 1 hora de validade
+      .createSignedUrl(filePath, validadeSegundos)
 
     if (error || !data) {
       console.error('Erro ao gerar URL assinada:', error)
-      return { url: null, error: error?.message || 'Erro ao gerar link de download.' }
+      // T2.03 — a política do bucket agora exige ver a oportunidade. Quando ela nega,
+      // o Supabase devolve erro técnico; a tela mostra linguagem de negócio.
+      const negado =
+        /policy|permission|denied|unauthorized|forbidden|row-level/i.test(
+          error?.message || '',
+        )
+      return {
+        url: null,
+        error: negado
+          ? 'Você não tem permissão para baixar este documento.'
+          : error?.message || 'Erro ao gerar link de download.',
+      }
     }
 
     return { url: data.signedUrl, error: null }
