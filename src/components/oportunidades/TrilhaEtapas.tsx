@@ -13,9 +13,12 @@ import {
   CheckSquare,
   FileText,
   Calendar,
+  Download,
+  Loader2,
 } from 'lucide-react'
 import { OportunidadeEtapa, OportunidadeChecklistItem } from '@/types/oportunidades'
 import { formatDateBR } from '@/components/NewOpportunityModal'
+import { getDownloadAnexoUrl } from '@/services/oportunidades'
 
 interface TrilhaEtapasProps {
   etapas: OportunidadeEtapa[]
@@ -32,6 +35,30 @@ export function TrilhaEtapas({
 }: TrilhaEtapasProps) {
   // Estado para expandir/recolher checklist de etapas concluídas (somente leitura)
   const [etapaExpandidaId, setEtapaExpandidaId] = useState<string | null>(null)
+
+  // T2.04 (debug) — o checklist de etapas concluídas é somente leitura, mas os documentos
+  // anexados a ele continuam acessíveis: antes a tela só mostrava o nome do arquivo, sem
+  // nenhuma forma de baixar, e o documento ficava inalcançável depois que a etapa fechava.
+  const [baixandoId, setBaixandoId] = useState<string | null>(null)
+  const [erroDownload, setErroDownload] = useState<string | null>(null)
+
+  const baixarDocumento = async (caminho: string | null | undefined, chave: string) => {
+    if (!caminho) {
+      setErroDownload('Este arquivo não tem caminho de armazenamento registrado.')
+      return
+    }
+    setBaixandoId(chave)
+    setErroDownload(null)
+
+    const res = await getDownloadAnexoUrl(caminho)
+    setBaixandoId(null)
+
+    if (res.error || !res.url) {
+      setErroDownload(res.error || 'Não foi possível gerar o link do documento.')
+    } else {
+      window.open(res.url, '_blank', 'noopener,noreferrer')
+    }
+  }
 
   const toggleExpandir = (id: string) => {
     setEtapaExpandidaId((prev) => (prev === id ? null : id))
@@ -203,6 +230,13 @@ export function TrilhaEtapas({
                       Checklist realizado nesta etapa (Somente leitura)
                     </h5>
 
+                    {/* T2.04 (debug) — feedback quando o link do documento não pode ser gerado */}
+                    {erroDownload && (
+                      <div className="mb-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-[11px] text-rose-800 font-medium">
+                        {erroDownload}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                       {etapa.itens.map((item) => (
                         <div
@@ -226,22 +260,67 @@ export function TrilhaEtapas({
                               {item.documentos && item.documentos.length > 0 ? (
                                 <div className="space-y-1">
                                   {item.documentos.map((doc) => (
-                                    <div key={doc.id} className="flex items-center gap-1.5">
-                                      <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
-                                      <span className="truncate font-medium text-slate-700">
-                                        {doc.arquivo_nome}
-                                      </span>
+                                    <div
+                                      key={doc.id}
+                                      className="flex items-center justify-between gap-1.5"
+                                    >
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                                        <span className="truncate font-medium text-slate-700">
+                                          {doc.arquivo_nome}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => baixarDocumento(doc.arquivo_caminho, doc.id)}
+                                        disabled={baixandoId === doc.id}
+                                        title="Baixar documento"
+                                        className="h-6 px-1.5 rounded-md text-teal-700 hover:bg-teal-50 text-[11px] font-semibold flex-shrink-0"
+                                      >
+                                        {baixandoId === doc.id ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <>
+                                            <Download className="w-3 h-3 mr-0.5" />
+                                            Baixar
+                                          </>
+                                        )}
+                                      </Button>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-1.5">
-                                  <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
-                                  <span className="truncate">
-                                    {item.arquivo_nome
-                                      ? item.arquivo_nome
-                                      : 'Nenhum arquivo anexado'}
-                                  </span>
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <FileText className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {item.arquivo_nome
+                                        ? item.arquivo_nome
+                                        : 'Nenhum arquivo anexado'}
+                                    </span>
+                                  </div>
+                                  {item.arquivo_nome && item.arquivo_url && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => baixarDocumento(item.arquivo_url, item.id)}
+                                      disabled={baixandoId === item.id}
+                                      title="Baixar documento"
+                                      className="h-6 px-1.5 rounded-md text-teal-700 hover:bg-teal-50 text-[11px] font-semibold flex-shrink-0"
+                                    >
+                                      {baixandoId === item.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Download className="w-3 h-3 mr-0.5" />
+                                          Baixar
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </div>
