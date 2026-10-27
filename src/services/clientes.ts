@@ -312,10 +312,25 @@ export const toggleClienteSituacao = async (
   novaSituacao: ClienteSituacao,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    const { error } = await db.from('clientes').update({ situacao: novaSituacao }).eq('id', id)
+    // T2.02 — o `.select()` é obrigatório aqui: quando a RLS bloqueia o UPDATE, o
+    // Supabase devolve sucesso com ZERO linhas (não é erro). Sem ler as linhas
+    // afetadas, a tela mostrava "arquivado com sucesso" sem ter arquivado nada.
+    const { data, error } = await db
+      .from('clientes')
+      .update({ situacao: novaSituacao })
+      .eq('id', id)
+      .select('id')
 
     if (error) {
       return { success: false, error: 'Não foi possível alterar a situação do cliente.' }
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        success: false,
+        error:
+          'Apenas administradores e gestores podem arquivar ou reativar clientes. Fale com um administrador.',
+      }
     }
 
     return { success: true }
@@ -420,22 +435,6 @@ export const setContatoPrincipal = async (
 
     if (error) {
       return { success: false, error: 'Não foi possível definir como contato principal.' }
-    }
-
-    return { success: true }
-  } catch (err: any) {
-    return { success: false, error: err.message || 'Falha de rede.' }
-  }
-}
-
-export const deleteContato = async (
-  contatoId: string,
-): Promise<{ success: boolean; error?: string }> => {
-  try {
-    const { error } = await db.from('clientes_contatos').delete().eq('id', contatoId)
-
-    if (error) {
-      return { success: false, error: 'Não foi possível remover o contato.' }
     }
 
     return { success: true }

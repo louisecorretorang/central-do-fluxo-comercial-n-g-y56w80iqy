@@ -7,6 +7,7 @@ import { OportunidadeResumo } from '@/types/oportunidades'
 import { formatCurrencyBRL } from '@/components/NewOpportunityModal'
 import { formatCNPJ, formatCPF, formatDateBR, formatPhoneBR } from '@/lib/clientes-utils'
 import { useOpportunityModal } from '@/hooks/use-opportunity-modal'
+import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import PageStateLayout from '@/components/PageStateLayout'
 import ClienteFormModal from '@/components/clientes/ClienteFormModal'
@@ -59,6 +60,10 @@ export default function ClienteDetalhes() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { openModal: openOpportunityModal } = useOpportunityModal()
+  // T2.02 — arquivar cliente é ato de administrador ou gestor (regras-e-permissoes).
+  // O colaborador não vê o botão; o banco também recusa (trigger), em duas camadas.
+  const { isAdmin, isGestor } = useAuth()
+  const podeArquivarCliente = isAdmin || isGestor
 
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [oportunidades, setOportunidades] = useState<OportunidadeResumo[]>([])
@@ -307,28 +312,30 @@ export default function ClienteDetalhes() {
               <span>Editar</span>
             </Button>
 
-            {/* Arquivar / Reativar */}
-            <Button
-              variant="outline"
-              onClick={() => setToggleArchiveOpen(true)}
-              className={`h-10 px-3.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 btn-press ${
-                isArquivado
-                  ? 'border-emerald-200 text-emerald-800 hover:bg-emerald-50'
-                  : 'border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-800'
-              }`}
-            >
-              {isArquivado ? (
-                <>
-                  <RefreshCw className="w-4 h-4 text-emerald-600" />
-                  <span>Reativar cliente</span>
-                </>
-              ) : (
-                <>
-                  <Archive className="w-4 h-4 text-slate-500" />
-                  <span>Arquivar</span>
-                </>
-              )}
-            </Button>
+            {/* Arquivar / Reativar — só administrador e gestor (T2.02) */}
+            {podeArquivarCliente && (
+              <Button
+                variant="outline"
+                onClick={() => setToggleArchiveOpen(true)}
+                className={`h-10 px-3.5 rounded-xl text-xs sm:text-sm flex items-center gap-2 btn-press ${
+                  isArquivado
+                    ? 'border-emerald-200 text-emerald-800 hover:bg-emerald-50'
+                    : 'border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-800'
+                }`}
+              >
+                {isArquivado ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 text-emerald-600" />
+                    <span>Reativar cliente</span>
+                  </>
+                ) : (
+                  <>
+                    <Archive className="w-4 h-4 text-slate-500" />
+                    <span>Arquivar</span>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
 
