@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   getClienteById,
   toggleClienteSituacao,
-  deleteContato,
   setContatoPrincipal,
 } from '@/services/clientes'
 import { getOportunidades } from '@/services/oportunidades'
@@ -44,7 +43,6 @@ import {
   Edit2,
   Plus,
   Star,
-  Trash2,
   Archive,
   RefreshCw,
   Mail,
@@ -79,10 +77,6 @@ export default function ClienteDetalhes() {
   // Diálogo de confirmação de arquivamento / reativação
   const [toggleArchiveOpen, setToggleArchiveOpen] = useState(false)
   const [toggling, setToggling] = useState(false)
-
-  // Diálogo de confirmação de exclusão de contato
-  const [deleteContatoTarget, setDeleteContatoTarget] = useState<ClienteContato | null>(null)
-  const [deletingContato, setDeletingContato] = useState(false)
 
   const fetchCliente = useCallback(async () => {
     if (!id) return
@@ -175,37 +169,6 @@ export default function ClienteDetalhes() {
         title: 'Erro',
         description: 'Falha na conexão.',
       })
-    }
-  }
-
-  // Ação de excluir contato
-  const handleDeleteContatoConfirm = async () => {
-    if (!deleteContatoTarget) return
-    setDeletingContato(true)
-    try {
-      const res = await deleteContato(deleteContatoTarget.id)
-      if (res.success) {
-        toast({
-          title: 'Contato removido',
-          description: `O contato ${deleteContatoTarget.nome} foi excluído da ficha.`,
-        })
-        setDeleteContatoTarget(null)
-        fetchCliente()
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Erro ao remover contato',
-          description: res.error || 'Não foi possível remover o contato.',
-        })
-      }
-    } catch {
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Falha na conexão.',
-      })
-    } finally {
-      setDeletingContato(false)
     }
   }
 
@@ -614,15 +577,6 @@ export default function ClienteDetalhes() {
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteContatoTarget(ct)}
-                              className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Remover contato"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -662,14 +616,6 @@ export default function ClienteDetalhes() {
                           className="h-8 w-8 p-0 text-slate-500"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteContatoTarget(ct)}
-                          className="h-8 w-8 p-0 text-red-500"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -891,43 +837,7 @@ export default function ClienteDetalhes() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Diálogo de Confirmação: Excluir Contato */}
-      <AlertDialog
-        open={Boolean(deleteContatoTarget)}
-        onOpenChange={(open) => !open && setDeleteContatoTarget(null)}
-      >
-        <AlertDialogContent className="rounded-2xl sm:max-w-[440px]">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <AlertDialogTitle className="text-lg font-bold text-[#0C2D48]">
-                Remover contato?
-              </AlertDialogTitle>
-            </div>
-            <AlertDialogDescription className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Tem certeza que deseja remover o contato <strong>{deleteContatoTarget?.nome}</strong>{' '}
-              ({deleteContatoTarget?.cargo_area}) da ficha deste cliente?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-2 pt-3">
-            <AlertDialogCancel
-              disabled={deletingContato}
-              className="rounded-xl h-10 text-xs font-semibold"
-            >
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteContatoConfirm}
-              disabled={deletingContato}
-              className="rounded-xl h-10 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white"
-            >
-              {deletingContato ? 'Removendo...' : 'Sim, remover contato'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      
     </div>
   )
 }
