@@ -196,15 +196,19 @@ export default function MinhaFila() {
   }
 
   if (error && oportunidades.length === 0) {
+    // T2.04 — a mensagem antiga atribuía qualquer falha a "problema na comunicação com o
+    // banco de dados", mesmo quando a causa era outra. Mantém o botão de repetir (aqui a
+    // tentativa pode sim resolver), mas com texto neutro e honesto.
     return (
       <PageStateLayout
         title="Minha fila"
-        subtitle="Não foi possível obter os dados da fila no momento."
+        subtitle="Oportunidades em que você é responsável ou que estão na fila da sua equipe."
         icon={Inbox}
-        emptyMessage="Ocorreu uma falha na comunicação com o banco de dados."
-        actionLabel="Tentar novamente"
-        onAction={fetchFila}
+        emptyMessage="Não foi possível carregar a sua fila."
         status="error"
+        errorTitle="Não foi possível carregar a sua fila"
+        errorMessage="Pode ter havido uma falha momentânea de conexão. Tente novamente em alguns instantes."
+        retryLabel="Tentar novamente"
         onRetry={fetchFila}
       />
     )
