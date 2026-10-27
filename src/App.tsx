@@ -25,6 +25,7 @@ import Catalogo from './pages/Catalogo'
 import Fluxos from './pages/Fluxos'
 import AuthCallback from './pages/AuthCallback'
 import DefinirSenha from './pages/DefinirSenha'
+import SemAcesso from './pages/SemAcesso'
 
 const App = () => (
   <BrowserRouter>
@@ -40,6 +41,13 @@ const App = () => (
             {/* Confirmação de e-mail / ativação / troca de senha */}
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/definir-senha" element={<DefinirSenha />} />
+
+            {/* T2.04 — a tela de sem acesso precisa ser alcançável por qualquer usuário
+                autenticado. Fica DENTRO do ProtectedRoute (exige login) e FORA do
+                AdminRoute (senão entraria em laço: um colaborador nunca chegaria nela). */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/sem-acesso" element={<SemAcesso />} />
+            </Route>
 
             {/* Rotas internas protegidas dentro do Layout institucional N&G */}
             <Route element={<ProtectedRoute />}>
