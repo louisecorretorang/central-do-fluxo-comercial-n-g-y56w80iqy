@@ -12,6 +12,21 @@ interface PageStateLayoutProps {
   onAction?: () => void
   status?: 'idle' | 'loading' | 'empty' | 'error'
   onRetry?: () => void
+  /**
+   * T2.04 — o estado `error` era usado para duas coisas diferentes: falha técnica de
+   * verdade e falta de permissão. O texto fixo ("instabilidade temporária") aparecia
+   * embaixo de títulos como "você não tem acesso", e o botão "Tentar novamente" convidava
+   * a repetir uma ação que nunca funcionaria.
+   *
+   * Agora as telas podem dizer o que aconteceu. Sem passar nada, o comportamento antigo
+   * continua igual — nenhuma tela que não foi ajustada muda de aparência.
+   */
+  errorTitle?: string
+  errorMessage?: string
+  /** Rótulo do botão de repetir. */
+  retryLabel?: string
+  /** Esconde o botão de repetir mesmo havendo `onRetry` (caso de falta de permissão). */
+  hideRetry?: boolean
 }
 
 export const PageStateLayout: React.FC<PageStateLayoutProps> = ({
@@ -23,6 +38,10 @@ export const PageStateLayout: React.FC<PageStateLayoutProps> = ({
   onAction,
   status = 'empty',
   onRetry,
+  errorTitle,
+  errorMessage,
+  retryLabel,
+  hideRetry = false,
 }) => {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -59,18 +78,19 @@ export const PageStateLayout: React.FC<PageStateLayoutProps> = ({
               <AlertCircle className="w-7 h-7" />
             </div>
             <h3 className="text-lg font-semibold text-slate-800">
-              Não foi possível carregar. Tente novamente.
+              {errorTitle || 'Não foi possível carregar. Tente novamente.'}
             </h3>
             <p className="text-sm text-slate-500 mt-1 max-w-sm">
-              Houve uma instabilidade temporária ao buscar as informações do fluxo.
+              {errorMessage ||
+                'Houve uma instabilidade temporária ao buscar as informações do fluxo.'}
             </p>
-            {onRetry && (
+            {onRetry && !hideRetry && (
               <Button
                 variant="outline"
                 onClick={onRetry}
                 className="mt-5 rounded-xl border-slate-300 text-slate-700 hover:bg-white btn-press"
               >
-                Tentar novamente
+                {retryLabel || 'Tentar novamente'}
               </Button>
             )}
           </CardContent>
