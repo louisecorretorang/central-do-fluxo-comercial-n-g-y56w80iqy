@@ -327,9 +327,7 @@ export const mensagemBloqueioArquivamento = (): string =>
  * T3.02/CA-1-13 — devolve a mensagem de bloqueio quando o arquivamento não é permitido,
  * ou `null` quando pode arquivar. Falha fechada: se a consulta falhar, deixa o banco decidir.
  */
-export const verificarBloqueioArquivamento = async (
-  clienteId: string,
-): Promise<string | null> => {
+export const verificarBloqueioArquivamento = async (clienteId: string): Promise<string | null> => {
   try {
     const { data, error } = await db.rpc('cliente_tem_oportunidade_em_andamento', {
       p_cliente_id: clienteId,
