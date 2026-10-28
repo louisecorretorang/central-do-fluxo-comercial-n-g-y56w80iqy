@@ -6,7 +6,7 @@ import {
   ClienteContatoFormData,
   ClienteSituacao,
 } from '@/types/clientes'
-import { onlyDigits, parseDateBRToISO } from '@/lib/clientes-utils'
+import { normalizarDocumento, parseDateBRToISO } from '@/lib/clientes-utils'
 
 // Helper seguro para tabelas novas até que types.ts seja re-gerado
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -53,14 +53,17 @@ export const getClientes = async (
     let result = (data as unknown as Cliente[]) || []
     if (filters?.search && filters.search.trim()) {
       const term = filters.search.trim().toLowerCase()
-      const termDigits = onlyDigits(term)
+      // T3.01 — a busca por documento também precisa achar CNPJ alfanumérico.
+      // normalizarDocumento mantém letras e números (maiúsculos) no CNPJ e só dígitos no CPF,
+      // então a mesma expressão serve para os dois tipos.
+      const termDocumento = normalizarDocumento(term, 'PJ')
 
       result = result.filter((c) => {
         const nomeMatch = (c.nome_completo || '').toLowerCase().includes(term)
         const razaoMatch = (c.razao_social || '').toLowerCase().includes(term)
         const fantasiaMatch = (c.nome_fantasia || '').toLowerCase().includes(term)
-        const docMatch = termDigits
-          ? (c.cnpj && c.cnpj.includes(termDigits)) || (c.cpf && c.cpf.includes(termDigits))
+        const docMatch = termDocumento
+          ? (c.cnpj && c.cnpj.includes(termDocumento)) || (c.cpf && c.cpf.includes(termDocumento))
           : false
         const cidadeMatch = (c.cidade || '').toLowerCase().includes(term)
         const respMatch = (c.responsavel_comercial?.nome || '').toLowerCase().includes(term)
@@ -121,7 +124,9 @@ export const findClienteByDocumento = async (
   excludeId?: string,
 ): Promise<{ exists: boolean; cliente: Cliente | null }> => {
   try {
-    const digits = onlyDigits(documento)
+    // T3.01 — normaliza igual ao que é gravado: sem isso, um CNPJ alfanumérico
+    // digitado com máscara não encontraria o registro existente.
+    const digits = normalizarDocumento(documento, tipo === 'PJ' ? 'PJ' : 'PF')
     if (!digits) return { exists: false, cliente: null }
 
     let query = db
@@ -157,7 +162,11 @@ export const createCliente = async (
   formData: ClienteFormData,
 ): Promise<{ success: boolean; data?: Cliente; error?: string; existingCliente?: Cliente }> => {
   try {
-    const docDigits = formData.tipo === 'PJ' ? onlyDigits(formData.cnpj) : onlyDigits(formData.cpf)
+    // T3.01 — documento normalizado preserva letras no CNPJ alfanumérico.
+    const docDigits = normalizarDocumento(
+      formData.tipo === 'PJ' ? formData.cnpj : formData.cpf,
+      formData.tipo === 'PJ' ? 'PJ' : 'PF',
+    )
 
     if (docDigits) {
       const check = await findClienteByDocumento(formData.tipo, docDigits)
@@ -227,7 +236,10 @@ export const updateCliente = async (
   formData: ClienteFormData,
 ): Promise<{ success: boolean; data?: Cliente; error?: string; existingCliente?: Cliente }> => {
   try {
-    const docDigits = formData.tipo === 'PJ' ? onlyDigits(formData.cnpj) : onlyDigits(formData.cpf)
+    const docDigits = normalizarDocumento(
+      formData.tipo === 'PJ' ? formData.cnpj : formData.cpf,
+      formData.tipo === 'PJ' ? 'PJ' : 'PF',
+    )
 
     if (docDigits) {
       const check = await findClienteByDocumento(formData.tipo, docDigits, id)

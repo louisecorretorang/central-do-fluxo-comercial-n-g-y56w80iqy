@@ -45,7 +45,7 @@ import { createOportunidade } from '@/services/oportunidades'
 import { Cliente, ClienteTipo } from '@/types/clientes'
 import { ProdutoCatalogo, SeguradoraOperadora, OrigemLead } from '@/types/catalogo'
 import {
-  onlyDigits,
+  normalizarDocumento,
   formatCPF,
   formatCNPJ,
   isValidCPF,
@@ -291,7 +291,9 @@ export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
     setQuickError(null)
     setQuickExistingCliente(null)
 
-    const docDigits = onlyDigits(quickDocumento)
+    // T3.01 — normalizarDocumento preserva letras: o cadastro rápido também precisa
+    // aceitar o CNPJ alfanumérico, senão a Nova Oportunidade recusa o que o cadastro aceita.
+    const docDigits = normalizarDocumento(quickDocumento, quickTipo === 'PJ' ? 'PJ' : 'PF')
     if (!docDigits) {
       setQuickError(quickTipo === 'PJ' ? 'Informe o CNPJ da empresa.' : 'Informe o CPF do cliente.')
       return
@@ -299,12 +301,12 @@ export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
 
     if (quickTipo === 'PJ') {
       if (docDigits.length !== 14 || !isValidCNPJ(docDigits)) {
-        setQuickError('CNPJ inválido. Digite 14 dígitos válidos.')
+        setQuickError('CNPJ inválido. Confira os números e, se houver, as letras.')
         return
       }
     } else {
       if (docDigits.length !== 11 || !isValidCPF(docDigits)) {
-        setQuickError('CPF inválido. Digite 11 dígitos válidos.')
+        setQuickError('CPF inválido. Verifique os números digitados.')
         return
       }
     }

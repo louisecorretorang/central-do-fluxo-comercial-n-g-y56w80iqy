@@ -37,6 +37,7 @@ import {
   onlyDigits,
   isValidCNPJ,
   isValidCPF,
+  normalizarDocumento,
   ESTADOS_BRASIL,
 } from '@/lib/clientes-utils'
 import { Building2, User, AlertCircle, CheckCircle2, ExternalLink, Users } from 'lucide-react'
@@ -262,21 +263,22 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
     const errs: Record<string, string> = {}
 
     if (tipo === 'PJ') {
-      const cnpjDigits = onlyDigits(cnpj)
-      if (!cnpjDigits) {
+      // T3.01 — normalizarDocumento preserva letras (CNPJ alfanumérico desde 31/07/2026).
+      const cnpjNorm = normalizarDocumento(cnpj, 'PJ')
+      if (!cnpjNorm) {
         errs.cnpj = 'Informe o CNPJ da empresa.'
-      } else if (cnpjDigits.length !== 14 || !isValidCNPJ(cnpjDigits)) {
-        errs.cnpj = 'CNPJ inválido. Verifique os números digitados.'
+      } else if (cnpjNorm.length !== 14 || !isValidCNPJ(cnpjNorm)) {
+        errs.cnpj = 'CNPJ inválido. Confira os números e, se houver, as letras.'
       }
 
       if (!razaoSocial.trim()) {
         errs.razaoSocial = 'Preencha a razão social da empresa.'
       }
     } else {
-      const cpfDigits = onlyDigits(cpf)
-      if (!cpfDigits) {
+      const cpfNorm = normalizarDocumento(cpf, 'PF')
+      if (!cpfNorm) {
         errs.cpf = 'Informe o CPF do cliente.'
-      } else if (cpfDigits.length !== 11 || !isValidCPF(cpfDigits)) {
+      } else if (cpfNorm.length !== 11 || !isValidCPF(cpfNorm)) {
         errs.cpf = 'CPF inválido. Verifique os números digitados.'
       }
 
@@ -493,7 +495,7 @@ export const ClienteFormModal: React.FC<ClienteFormModalProps> = ({
                   </Label>
                   <Input
                     id="cli-cnpj"
-                    placeholder="00.000.000/0000-00"
+                    placeholder="00.000.000/0000-00 ou AA.AAA.AAA/AAAA-00"
                     maxLength={18}
                     value={cnpj}
                     onChange={handleCnpjChange}

@@ -7,6 +7,30 @@ export const onlyDigits = (val?: string | null): string => {
   return val.replace(/\D/g, '')
 }
 
+/**
+ * T3.01 — normalização canônica de documento para gravação e comparação.
+ *
+ * Histórico: até aqui a tela gravava `onlyDigits(...)`. Para CPF isso está certo — CPF só tem
+ * números. Para CNPJ passou a estar errado em 31/07/2026, quando a Receita Federal começou a
+ * emitir o **CNPJ alfanumérico** (14 posições, podendo conter letras). Descartar as letras
+ * transformava "00.000.000/E08G-12" em "000000000081" — 12 dígitos — e o cadastro era recusado
+ * como inválido, sem o usuário entender por quê.
+ *
+ * Regra: CNPJ mantém letras e números, em maiúsculas (a RFB usa maiúsculas); CPF só dígitos.
+ * É esta a forma que vai para o banco e a que a unicidade compara.
+ */
+export const normalizarDocumento = (val: string | null | undefined, tipo: 'PF' | 'PJ'): string => {
+  if (!val) return ''
+  if (tipo === 'PJ') {
+    // Mantém apenas letras e números; letras sempre em maiúsculas.
+    return val
+      .toUpperCase()
+      .replace(/[^0-9A-Z]/g, '')
+      .slice(0, 14)
+  }
+  return onlyDigits(val).slice(0, 11)
+}
+
 export const formatCPF = (val?: string | null): string => {
   const digits = onlyDigits(val).slice(0, 11)
   if (!digits) return ''
@@ -17,7 +41,8 @@ export const formatCPF = (val?: string | null): string => {
 }
 
 export const formatCNPJ = (val?: string | null): string => {
-  const digits = onlyDigits(val).slice(0, 14)
+  // T3.01 — aceita o CNPJ alfanumérico: letras entram na máscara (00.000.000/0000-00).
+  const digits = normalizarDocumento(val, 'PJ')
   if (!digits) return ''
   if (digits.length <= 2) return digits
   if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`
@@ -90,36 +115,42 @@ export const isValidCPF = (val?: string | null): boolean => {
 }
 
 /**
- * Validação algorítmica de CNPJ
+ * Validação algorítmica de CNPJ — aceita o formato numérico e o **alfanumérico**.
+ *
+ * T3.01 — o CNPJ alfanumérico existe desde 31/07/2026 (Receita Federal). A regra de cálculo
+ * não mudou: continua módulo 11 com pesos 2–9. O que muda é como cada caractere vira número:
+ * valor ASCII menos 48. Assim os dígitos mantêm o valor de sempre e as letras ficam A=17,
+ * B=18, C=19… (manual de DV da RFB). Os dois dígitos verificadores continuam numéricos.
+ *
+ * Compatibilidade: um CNPJ só de números produz exatamente o mesmo cálculo de antes, então
+ * nenhum cadastro existente muda de resultado.
  */
 export const isValidCNPJ = (val?: string | null): boolean => {
-  const digits = onlyDigits(val)
-  if (digits.length !== 14) return false
-  if (/^(\d)\1{13}$/.test(digits)) return false
+  const doc = normalizarDocumento(val, 'PJ')
+  if (doc.length !== 14) return false
+  // Repetição total (00000000000000, AAAAAAAAAAAAAA) nunca é válida.
+  if (/^(.)\1{13}$/.test(doc)) return false
 
-  let size = digits.length - 2
-  let numbers = digits.substring(0, size)
-  const digitsVal = digits.substring(size)
-  let sum = 0
-  let pos = size - 7
+  // Os dois últimos caracteres são sempre dígitos verificadores numéricos.
+  if (!/^\d{2}$/.test(doc.slice(12))) return false
 
-  for (let i = size; i >= 1; i--) {
-    sum += parseInt(numbers.charAt(size - i), 10) * pos--
-    if (pos < 2) pos = 9
-  }
-  let result = sum % 11 < 2 ? 0 : 11 - (sum % 11)
-  if (result !== parseInt(digitsVal.charAt(0), 10)) return false
+  const valorCaractere = (ch: string) => ch.charCodeAt(0) - 48
 
-  size = size + 1
-  numbers = digits.substring(0, size)
-  sum = 0
-  pos = size - 7
-  for (let i = size; i >= 1; i--) {
-    sum += parseInt(numbers.charAt(size - i), 10) * pos--
-    if (pos < 2) pos = 9
-  }
-  result = sum % 11 < 2 ? 0 : 11 - (sum % 11)
-  if (result !== parseInt(digitsVal.charAt(1), 10)) return false
+  // Primeiro dígito verificador — pesos 5,4,3,2,9,8,7,6,5,4,3,2 sobre os 12 primeiros.
+  const pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+  let soma = 0
+  for (let i = 0; i < 12; i++) soma += valorCaractere(doc.charAt(i)) * pesos1[i]
+  let resto = soma % 11
+  const dv1 = resto < 2 ? 0 : 11 - resto
+  if (dv1 !== parseInt(doc.charAt(12), 10)) return false
+
+  // Segundo dígito verificador — pesos 6,5,4,3,2,9,8,7,6,5,4,3,2 sobre os 13 primeiros.
+  const pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+  soma = 0
+  for (let i = 0; i < 13; i++) soma += valorCaractere(doc.charAt(i)) * pesos2[i]
+  resto = soma % 11
+  const dv2 = resto < 2 ? 0 : 11 - resto
+  if (dv2 !== parseInt(doc.charAt(13), 10)) return false
 
   return true
 }
