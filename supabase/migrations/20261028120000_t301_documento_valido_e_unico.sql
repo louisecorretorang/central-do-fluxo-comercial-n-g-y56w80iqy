@@ -12,9 +12,14 @@
 --   2. normaliza os documentos já gravados (remove máscara, letras em maiúsculas);
 --   3. recria os índices únicos sobre o documento normalizado;
 --   4. adiciona CHECK na tabela, em NOT VALID, para não travar em dado legado
---      inconsistente — a lista de pendências fica registrada na consulta abaixo.
+--      inconsistente — a lista de pendências fica na view de duplicados.
 --
--- Reversível: os índices antigos são recriados no rollback; nenhum documento é apagado.
+-- ATENÇÃO NA APLICAÇÃO: o passo 4 (CREATE UNIQUE INDEX) falha de propósito se ainda
+-- houver documento repetido após a normalização. Se falhar, rode
+--   SELECT * FROM public.clientes_documentos_duplicados;
+-- e resolva os casos antes de reaplicar (Plano B da SPEC: decisão humana, nada é apagado).
+--
+-- Reversível: os índices antigos voltam no rollback; nenhum documento é apagado.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -32,7 +37,6 @@ DECLARE
   v_resto INTEGER;
   v_dv1 INTEGER;
   v_dv2 INTEGER;
-  v_valores INTEGER[];
   v_pesos1 INTEGER[] := ARRAY[5,4,3,2,9,8,7,6,5,4,3,2];
   v_pesos2 INTEGER[] := ARRAY[6,5,4,3,2,9,8,7,6,5,4,3,2];
   i INTEGER;
@@ -48,11 +52,13 @@ BEGIN
       RETURN FALSE;
     END IF;
     -- Repetição total nunca é válida (00000000000000, AAAAAAAAAAAAAA).
-    IF v_doc ~ '^(.)\1{13}$' THEN
+    -- Usa repeat() em vez de retrovisor em regex: comportamento idêntico e sem
+    -- depender de quantificação de backreference no motor de regex do Postgres.
+    IF v_doc = repeat(substring(v_doc FROM 1 FOR 1), 14) THEN
       RETURN FALSE;
     END IF;
     -- Os dois últimos são sempre dígitos verificadores numéricos.
-    IF substring(v_doc FROM 13 FOR 2) !~ '^\d{2}$' THEN
+    IF substring(v_doc FROM 13 FOR 2) !~ '^[0-9]{2}$' THEN
       RETURN FALSE;
     END IF;
 
@@ -85,7 +91,7 @@ BEGIN
     IF length(v_doc) <> 11 THEN
       RETURN FALSE;
     END IF;
-    IF v_doc ~ '^(.)\1{10}$' THEN
+    IF v_doc = repeat(substring(v_doc FROM 1 FOR 1), 11) THEN
       RETURN FALSE;
     END IF;
 
@@ -180,8 +186,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_clientes_cpf_unique
 
 -- ----------------------------------------------------------------------------
 -- 5. CHECK de validade — NOT VALID para não travar em dado legado inconsistente.
---    Vale para toda escrita nova; o legado é tratado pela normalização acima e
---    pela lista de duplicados.
+--    Vale para toda escrita nova; o legado fica visível na view de duplicados.
 -- ----------------------------------------------------------------------------
 ALTER TABLE public.clientes
   DROP CONSTRAINT IF EXISTS chk_clientes_cnpj_valido;
