@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import PageStateLayout from '@/components/PageStateLayout'
 import ClienteFormModal from '@/components/clientes/ClienteFormModal'
 import ContatoFormModal from '@/components/clientes/ContatoFormModal'
+import ListaOportunidadesDoCliente from '@/components/clientes/ListaOportunidadesDoCliente'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Building2,
   User,
@@ -69,6 +71,21 @@ export default function ClienteDetalhes() {
   const [oportunidades, setOportunidades] = useState<OportunidadeResumo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // T3.02/CA-1-12 — a ficha agrupa as oportunidades em três abas: em aberto, ganhas e perdidas.
+  // O enum do banco tem 8 valores; o agrupamento abaixo foi aprovado por Pedro em 28/10 15:52.
+  const EM_ABERTO = ['Em andamento', 'Adiada']
+  const GANHAS = ['Ganha', 'Ganha — em finalização', 'Concluída']
+  const PERDIDAS = ['Perdida', 'Descartada', 'Arquivada']
+
+  const oportunidadesEmAberto = oportunidades.filter((o) => EM_ABERTO.includes(o.situacao))
+  const oportunidadesGanhas = oportunidades.filter((o) => GANHAS.includes(o.situacao))
+  const oportunidadesPerdidas = oportunidades.filter((o) => PERDIDAS.includes(o.situacao))
+
+  // T3.02/CA-1-13 — o bloqueio de arquivamento vale para 'Em andamento', e só para ele.
+  // 'Adiada' aparece na aba "Em aberto" por conveniência de leitura, mas não impede arquivar:
+  // a SPEC fala em "oportunidade em andamento" e o trigger do banco usa o mesmo critério.
+  const oportunidadesEmAndamento = oportunidades.filter((o) => o.situacao === 'Em andamento')
 
   // Modais de edição
   const [editClienteOpen, setEditClienteOpen] = useState(false)
@@ -672,7 +689,7 @@ export default function ClienteDetalhes() {
                 Oportunidades deste cliente
               </CardTitle>
               <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-xs font-semibold">
-                {oportunidades.length} {oportunidades.length === 1 ? 'aberta' : 'abertas'}
+                {oportunidadesEmAberto.length} em aberto
               </Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -697,7 +714,7 @@ export default function ClienteDetalhes() {
                 <Briefcase className="w-6 h-6" />
               </div>
               <h4 className="text-sm font-bold text-[#0C2D48]">
-                Nenhuma oportunidade aberta no momento
+                Nenhuma oportunidade registrada ainda
               </h4>
               <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 Quando houver uma cotação, implantação ou renovação para este cliente, ela aparecerá
@@ -714,56 +731,59 @@ export default function ClienteDetalhes() {
               </Button>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {oportunidades.map((opp) => (
-                <div
-                  key={opp.id}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs uppercase px-2 py-0.5 rounded-md bg-teal-50 text-teal-900 border border-teal-200 font-bold">
-                        {opp.protocolo}
-                      </span>
-                      <span className="font-bold text-sm text-[#0C2D48]">
-                        {opp.produto_nome}
-                        {opp.seguradora_nome ? ` — ${opp.seguradora_nome}` : ''}
-                      </span>
-                      <Badge className="bg-slate-100 text-slate-700 border-none text-[10px]">
-                        {opp.situacao}
-                      </Badge>
-                      {opp.usou_fluxo_generico && (
-                        <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
-                          Fluxo padrão
-                        </Badge>
-                      )}
-                    </div>
+            /* T3.02/CA-1-12 — abas em aberto, ganhas e perdidas (checklist da SPEC-1-003). */
+            <Tabs defaultValue="abertas" className="w-full">
+              <div className="px-4 sm:px-5 pt-4">
+                <TabsList className="bg-slate-100/90 p-1 rounded-xl h-auto grid grid-cols-3 gap-1 border border-slate-200/60">
+                  <TabsTrigger
+                    value="abertas"
+                    className="rounded-lg py-2 text-xs font-semibold flex items-center justify-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0C2D48] data-[state=active]:shadow-xs"
+                  >
+                    Em aberto
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-200/70 text-slate-700">
+                      {oportunidadesEmAberto.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="ganhas"
+                    className="rounded-lg py-2 text-xs font-semibold flex items-center justify-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0C2D48] data-[state=active]:shadow-xs"
+                  >
+                    Ganhas
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                      {oportunidadesGanhas.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="perdidas"
+                    className="rounded-lg py-2 text-xs font-semibold flex items-center justify-center gap-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0C2D48] data-[state=active]:shadow-xs"
+                  >
+                    Perdidas
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 text-rose-800">
+                      {oportunidadesPerdidas.length}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-500 mt-1.5">
-                      <span className="font-medium text-teal-800">
-                        Etapa: {opp.etapa_atual_nome || 'Inicial'}
-                      </span>
-                      <span>Resp: {opp.responsavel_comercial_nome}</span>
-                      <span className="font-semibold text-slate-700">
-                        {formatCurrencyBRL(opp.valor_estimado)}
-                      </span>
-                      <span>Previsto: {formatDateBR(opp.data_prevista_fechamento)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      asChild
-                      className="h-9 px-3.5 rounded-xl border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                    >
-                      <Link to={`/oportunidades/${opp.id}`}>Ver oportunidade</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+              <TabsContent value="abertas" className="mt-0">
+                <ListaOportunidadesDoCliente
+                  itens={oportunidadesEmAberto}
+                  vazio="Nenhuma oportunidade em aberto para este cliente."
+                />
+              </TabsContent>
+              <TabsContent value="ganhas" className="mt-0">
+                <ListaOportunidadesDoCliente
+                  itens={oportunidadesGanhas}
+                  vazio="Nenhuma oportunidade ganha registrada para este cliente."
+                />
+              </TabsContent>
+              <TabsContent value="perdidas" className="mt-0">
+                <ListaOportunidadesDoCliente
+                  itens={oportunidadesPerdidas}
+                  vazio="Nenhuma oportunidade perdida registrada para este cliente."
+                />
+              </TabsContent>
+            </Tabs>
           )}
         </CardContent>
       </Card>
@@ -819,6 +839,23 @@ export default function ClienteDetalhes() {
                 ? 'Ao reativar, o cliente voltará a figurar na lista principal de clientes ativos da corretora.'
                 : 'Nenhum cliente é apagado do sistema. Ao arquivar, o cliente é movido para o arquivo inativo mas todo o histórico cadastral e contatos permanecem preservados.'}
             </AlertDialogDescription>
+            {/* T3.02/CA-1-13 — o motivo do bloqueio aparece antes do clique, não como erro
+                depois dele. O banco também recusa (trigger), em duas camadas. */}
+            {!isArquivado && oportunidadesEmAndamento.length > 0 && (
+              <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5">
+                <ShieldAlert className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  Este cliente tem{' '}
+                  <strong>
+                    {oportunidadesEmAndamento.length}{' '}
+                    {oportunidadesEmAndamento.length === 1
+                      ? 'oportunidade em andamento'
+                      : 'oportunidades em andamento'}
+                  </strong>{' '}
+                  e não pode ser arquivado. Conclua ou encerre as oportunidades antes de arquivar.
+                </p>
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2 pt-3">
             <AlertDialogCancel
@@ -829,18 +866,20 @@ export default function ClienteDetalhes() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleToggleArchiveConfirm}
-              disabled={toggling}
+              disabled={toggling || (!isArquivado && oportunidadesEmAndamento.length > 0)}
               className={`rounded-xl h-10 text-xs font-semibold ${
                 isArquivado
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   : 'bg-amber-600 hover:bg-amber-700 text-white'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {toggling
                 ? 'Processando...'
-                : isArquivado
-                  ? 'Sim, reativar cliente'
-                  : 'Sim, arquivar cliente'}
+                : !isArquivado && oportunidadesEmAndamento.length > 0
+                  ? 'Arquivamento bloqueado'
+                  : isArquivado
+                    ? 'Sim, reativar cliente'
+                    : 'Sim, arquivar cliente'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

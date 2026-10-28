@@ -317,6 +317,34 @@ export const updateCliente = async (
 }
 
 /**
+ * T3.02/CA-1-13 — mensagem única do bloqueio de arquivamento, usada pela tela e pelo serviço.
+ */
+export const mensagemBloqueioArquivamento = (): string =>
+  'Este cliente tem oportunidade em andamento e não pode ser arquivado. ' +
+  'Conclua ou encerre as oportunidades antes de arquivar.'
+
+/**
+ * T3.02/CA-1-13 — devolve a mensagem de bloqueio quando o arquivamento não é permitido,
+ * ou `null` quando pode arquivar. Falha fechada: se a consulta falhar, deixa o banco decidir.
+ */
+export const verificarBloqueioArquivamento = async (
+  clienteId: string,
+): Promise<string | null> => {
+  try {
+    const { data, error } = await db.rpc('cliente_tem_oportunidade_em_andamento', {
+      p_cliente_id: clienteId,
+    })
+
+    // Sem a função no banco (migração ainda não aplicada), não bloqueia na tela:
+    // o trigger continua sendo a defesa. Não inventar bloqueio por falha de rede.
+    if (error) return null
+    return data === true ? mensagemBloqueioArquivamento() : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Alternar situação de arquivamento (ativo <-> arquivado)
  */
 export const toggleClienteSituacao = async (
@@ -324,6 +352,14 @@ export const toggleClienteSituacao = async (
   novaSituacao: ClienteSituacao,
 ): Promise<{ success: boolean; error?: string }> => {
   try {
+    // T3.02/CA-1-13 — a SPEC diz que cliente com oportunidade em andamento não pode ser
+    // arquivado. A checagem aqui existe para devolver a mensagem certa antes de tentar o
+    // UPDATE; o banco (trg_bloqueia_arquivamento_com_oportunidade) é a última linha de defesa.
+    if (novaSituacao === 'arquivado') {
+      const bloqueio = await verificarBloqueioArquivamento(id)
+      if (bloqueio) return { success: false, error: bloqueio }
+    }
+
     // T2.02 — o `.select()` é obrigatório aqui: quando a RLS bloqueia o UPDATE, o
     // Supabase devolve sucesso com ZERO linhas (não é erro). Sem ler as linhas
     // afetadas, a tela mostrava "arquivado com sucesso" sem ter arquivado nada.
@@ -334,6 +370,10 @@ export const toggleClienteSituacao = async (
       .select('id')
 
     if (error) {
+      // Traduz o bloqueio do trigger: nunca vazar o texto cru do Postgres para a tela.
+      if (error.message?.includes('CLIENTE_COM_OPORTUNIDADE_EM_ANDAMENTO')) {
+        return { success: false, error: mensagemBloqueioArquivamento() }
+      }
       return { success: false, error: 'Não foi possível alterar a situação do cliente.' }
     }
 
