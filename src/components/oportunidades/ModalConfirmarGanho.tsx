@@ -64,6 +64,14 @@ export function ModalConfirmarGanho({
   }, [open, seguradoraIdAtual, valorEstimadoAtual, numeroQuiverAtual])
 
   const handleConfirmar = async () => {
+    // T5.03b — o banco passou a exigir os três campos (regra 7). A tela confere antes para
+    // não devolver erro de servidor: seguradora só é exigida quando realmente está vazia,
+    // para não quebrar o caso em que a abertura já definiu a operadora.
+    if (!seguradoraId) {
+      setErro('Selecione a seguradora/operadora para confirmar o ganho.')
+      return
+    }
+
     const valorNumerico = parseCurrencyToNumber(valorFechadoStr)
     if (valorNumerico <= 0) {
       setErro('Informe o valor fechado da proposta em R$.')
@@ -122,78 +130,72 @@ export function ModalConfirmarGanho({
           {/* Seguradora / Operadora */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Seguradora / Operadora fechada
+              Seguradora / Operadora <span className="text-red-500">*</span>
             </label>
             <select
               value={seguradoraId}
               onChange={(e) => setSeguradoraId(e.target.value)}
-              className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:border-teal-500 focus:outline-none"
+              className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:border-teal-500 focus:outline-none"
             >
               <option value="">Selecione a seguradora/operadora...</option>
               {seguradoras.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.nome} ({s.frente})
+                  {s.nome}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Valor Fechado */}
+          {/* Valor fechado */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Valor fechado (R$) <span className="text-red-500 font-bold">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">R$</span>
-              <Input
-                type="text"
-                placeholder="0,00"
-                value={valorFechadoStr}
-                onChange={(e) => setValorFechadoStr(e.target.value)}
-                className="h-9 pl-9 text-xs rounded-xl border-slate-200 font-mono"
-              />
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">Exemplo: 1.250,00 ou 4.800,50</p>
-          </div>
-
-          {/* Nº da Proposta */}
-          <div>
-            <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Nº da proposta / apólice (Quiver) <span className="text-red-500 font-bold">*</span>
+              Valor fechado (R$) <span className="text-red-500">*</span>
             </label>
             <Input
-              type="text"
-              placeholder="Digite o número da proposta ou apólice..."
+              value={valorFechadoStr}
+              onChange={(e) => setValorFechadoStr(formatCurrencyBRL(e.target.value))}
+              placeholder="R$ 0,00"
+              className="h-10 rounded-xl text-xs border-slate-200 font-mono"
+            />
+          </div>
+
+          {/* Nº da proposta / Quiver */}
+          <div>
+            <label className="text-xs font-semibold text-slate-700 block mb-1">
+              Nº da proposta / Quiver <span className="text-red-500">*</span>
+            </label>
+            <Input
               value={numeroProposta}
               onChange={(e) => setNumeroProposta(e.target.value)}
-              className="h-9 text-xs rounded-xl border-slate-200 font-mono"
+              placeholder="Ex.: 123456789"
+              className="h-10 rounded-xl text-xs border-slate-200 font-mono"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={salvando}
-            className="rounded-xl text-xs h-9"
+            className="h-10 px-4 rounded-xl text-xs border-slate-200"
           >
             Cancelar
           </Button>
           <Button
             type="button"
             onClick={handleConfirmar}
-            disabled={salvando}
-            className="rounded-xl text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold btn-press"
+            disabled={salvando || !seguradoraId || !valorFechadoStr || !numeroProposta.trim()}
+            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold btn-press"
           >
             {salvando ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                Salvando fechamento...
+                Confirmando...
               </>
             ) : (
-              'Confirmar Ganho'
+              'Confirmar ganho'
             )}
           </Button>
         </DialogFooter>
