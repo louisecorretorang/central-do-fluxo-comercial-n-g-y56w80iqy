@@ -51,6 +51,7 @@ import {
   isValidCPF,
   isValidCNPJ,
   parseDateBRToISO,
+  formatDateBR as formatDateBRCanonico,
 } from '@/lib/clientes-utils'
 
 interface NewOpportunityModalProps {
@@ -81,12 +82,11 @@ export const parseCurrencyToNumber = (value: string): number => {
   return Number(digits) / 100
 }
 
-export const formatDateBR = (value: string): string => {
-  const digits = value.replace(/\D/g, '').slice(0, 8)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`
-}
+// Datas ISO (2026-10-30) e digitadas (30102026) usam a mesma função: a versão canônica de
+// `clientes-utils` distingue as duas. A implementação anterior fatiava qualquer string como
+// DDMMAAAA e transformava 2026-10-30 em 20/26/1030 — valia para datas de coluna e para
+// timestamps, em toda a aplicação.
+export const formatDateBR = (value: string): string => formatDateBRCanonico(value)
 
 export const NewOpportunityModal: React.FC<NewOpportunityModalProps> = ({
   open,
