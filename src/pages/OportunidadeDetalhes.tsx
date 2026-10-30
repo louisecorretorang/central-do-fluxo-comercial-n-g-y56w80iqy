@@ -15,8 +15,10 @@ import {
   RotateCw,
   XCircle,
   Archive,
+  CheckCircle2,
 } from 'lucide-react'
 import { getOportunidadeById } from '@/services/oportunidades'
+import { getDatasFechamento } from '@/services/oportunidade-datas'
 import { OportunidadeDetalhe } from '@/types/oportunidades'
 import { formatDateBR, formatCurrencyBRL } from '@/components/NewOpportunityModal'
 import { formatCNPJ, formatCPF } from '@/lib/clientes-utils'
@@ -57,11 +59,15 @@ export default function OportunidadeDetalhes() {
       setError(null)
 
       try {
-        const res = await getOportunidadeById(id)
+        const [res, datas] = await Promise.all([
+          getOportunidadeById(id),
+          getDatasFechamento(id),
+        ])
         if (res.error || !res.data) {
           throw new Error(res.error || 'Oportunidade não encontrada.')
         }
-        setOpp(res.data)
+        // T5.03b — as datas vêm de um módulo próprio para não engordar o select principal.
+        setOpp({ ...res.data, ...datas })
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Falha ao buscar oportunidade.'
         setError(msg)
@@ -375,6 +381,14 @@ export default function OportunidadeDetalhes() {
                 <XCircle className="w-4 h-4 text-rose-600" />
                 <span>Oportunidade Perdida</span>
               </div>
+              {opp.data_perda && (
+                <div>
+                  <span className="text-slate-500 font-medium">Perdida em: </span>
+                  <span className="font-bold text-rose-950">
+                    {formatDateBR(opp.data_perda)}
+                  </span>
+                </div>
+              )}
               <div>
                 <span className="text-slate-500 font-medium">Motivo da perda: </span>
                 <span className="font-bold text-rose-950">
@@ -385,6 +399,38 @@ export default function OportunidadeDetalhes() {
                 <div>
                   <span className="text-slate-500 font-medium">Observação: </span>
                   <span className="text-slate-800 whitespace-pre-wrap">{opp.observacao_perda}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Ganho: data e valor fechado (T5.03b) */}
+          {(opp.situacao === 'Ganha' ||
+            opp.situacao === 'Ganha — em finalização' ||
+            (opp.situacao === 'Concluída' && opp.data_ganho)) && (
+            <div className="mt-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Oportunidade Ganha</span>
+              </div>
+              {opp.data_ganho && (
+                <div>
+                  <span className="text-slate-500 font-medium">Ganha em: </span>
+                  <span className="font-bold text-emerald-950">{formatDateBR(opp.data_ganho)}</span>
+                </div>
+              )}
+              {opp.valor_fechado != null && (
+                <div>
+                  <span className="text-slate-500 font-medium">Valor fechado: </span>
+                  <span className="font-bold text-emerald-950">
+                    {formatCurrencyBRL(opp.valor_fechado)}
+                  </span>
+                </div>
+              )}
+              {opp.numero_quiver && (
+                <div>
+                  <span className="text-slate-500 font-medium">Nº proposta/Quiver: </span>
+                  <span className="text-slate-800 font-mono">{opp.numero_quiver}</span>
                 </div>
               )}
             </div>
