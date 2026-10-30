@@ -139,6 +139,10 @@ export interface OportunidadeResumo {
   origem_nome: string
   valor_estimado: number
   valor_fechado?: number | null
+  /** T5.03b — data em que a oportunidade foi marcada como ganha. */
+  data_ganho?: string | null
+  /** T5.03b — data em que a oportunidade foi marcada como perdida. */
+  data_perda?: string | null
   motivo_perda_id?: string | null
   motivo_perda_nome?: string | null
   observacao_perda?: string | null

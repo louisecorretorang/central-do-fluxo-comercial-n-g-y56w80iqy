@@ -91,16 +91,14 @@ export function ChecklistEtapaAtual({
   }
 
   // Verifica se todos os itens OBRIGATÓRIOS da etapa atual foram preenchidos / concluídos
-  // Para 'Documento': conta como preenchido quando tiver PELO MENOS UM arquivo
+  // Para 'Documento': conta como preenchido quando tiver PELO MENOS UM arquivo na tabela de
+  // anexos — mesma regra do banco desde a T5.01. `arquivo_url` é coluna legada e `concluido`
+  // não vale como prova: marcar o item sem anexar não libera a etapa.
   const obrigatorios = etapaAtual.itens.filter((i) => i.obrigatorio)
   const obrigatoriosConcluidos = obrigatorios.filter((i) => {
     if (i.tipo === 'Confirmação') return i.concluido
     if (i.tipo === 'Documento') {
-      return (
-        (i.documentos && i.documentos.length > 0) ||
-        Boolean(i.arquivo_url && i.arquivo_url.trim().length > 0) ||
-        i.concluido
-      )
+      return Boolean(i.documentos && i.documentos.length > 0)
     }
     if (i.tipo === 'Informação') {
       const v = valoresLocais[i.id] !== undefined ? valoresLocais[i.id] : i.valor
@@ -217,15 +215,34 @@ export function ChecklistEtapaAtual({
     .filter((i) => !obrigatoriosConcluidos.some((c) => c.id === i.id))
     .map((i) => i.titulo)
 
-  // Checar se o usuário atual pode assumir esta etapa (quando em fila_equipe)
+  // T5.02 — a etapa da fila só pode ser assumida enquanto ninguém a assumiu. Depois disso,
+  // o banco recusa com "já assumida por …"; a tela mostra de quem é em vez de oferecer o botão.
+  const etapaSemDono =
+    etapaAtual && etapaAtual.responsavel_tipo === 'fila_equipe' && !etapaAtual.responsavel_usuario_id
+
   const podeAssumir =
-    etapaAtual &&
-    etapaAtual.responsavel_tipo === 'fila_equipe' &&
-    etapaAtual.responsavel_usuario_id !== usuarioId &&
+    etapaSemDono &&
     (userPerfil === 'Administrador' ||
       (etapaAtual.equipe_id &&
         userEquipeIds.includes(etapaAtual.equipe_id) &&
         (!etapaAtual.funcao || etapaAtual.funcao === userFuncao)))
+
+  // T5.02 / D-23 — a mesma regra do banco (`pode_movimentar_etapa`): responsável da etapa,
+  // administrador, gestor da equipe, ou qualquer pessoa da equipe + função em etapa de fila.
+  const etapaDeFila = etapaAtual.responsavel_tipo === 'fila_equipe'
+  const pertenceAFila =
+    etapaDeFila &&
+    etapaAtual.equipe_id &&
+    userEquipeIds.includes(etapaAtual.equipe_id) &&
+    (!etapaAtual.funcao || etapaAtual.funcao === userFuncao)
+
+  const podeMovimentar =
+    userPerfil === 'Administrador' ||
+    etapaAtual.responsavel_usuario_id === usuarioId ||
+    pertenceAFila ||
+    (userPerfil === 'Gestor' &&
+      etapaAtual.equipe_id &&
+      userEquipeIds.includes(etapaAtual.equipe_id))
 
   const handleAssumirEtapa = async () => {
     setAssumindo(true)
@@ -262,6 +279,20 @@ export function ChecklistEtapaAtual({
     })
 
     setConcluindo(false)
+
+    // T5.03b / regra 8 — fluxo sem etapa de ganho: em vez de um erro seco, leva a pessoa
+    // direto para a confirmação de ganho. A função do banco recusa com essa mensagem; a tela
+    // reconhece e abre o modal, sem precisar alterar o serviço.
+    const precisaGanho = /não tem etapa de ganho/i.test(res.error || '')
+    if (res.error && precisaGanho && onAbrirModalGanho) {
+      setSucesso(
+        'Este fluxo não tem etapa de ganho. Confirme seguradora, valor e nº da proposta para encerrar.',
+      )
+      setTimeout(() => setSucesso(null), 8000)
+      onAbrirModalGanho()
+      return
+    }
+
     if (res.error) {
       setErro(res.error)
     } else {
@@ -325,7 +356,7 @@ export function ChecklistEtapaAtual({
             </Button>
           )}
 
-          {etapaAtual.ordem > 1 && onAbrirModalVoltar && !bloqueadoMovimento && (
+          {etapaAtual.ordem > 1 && onAbrirModalVoltar && !bloqueadoMovimento && podeMovimentar && (
             <Button
               type="button"
               variant="outline"
@@ -337,7 +368,7 @@ export function ChecklistEtapaAtual({
             </Button>
           )}
 
-          {!bloqueadoMovimento && (
+          {!bloqueadoMovimento && podeMovimentar && (
             <Button
               type="button"
               onClick={handleConcluirEtapa}
@@ -370,6 +401,20 @@ export function ChecklistEtapaAtual({
       </CardHeader>
 
       <CardContent className="p-5 sm:p-6 space-y-4">
+        {/* T5.02 — etapa da fila já assumida por outra pessoa: diz de quem é, em vez de
+            oferecer um botão que o banco vai recusar. */}
+        {etapaAtual.responsavel_tipo === 'fila_equipe' &&
+          etapaAtual.responsavel_usuario_id &&
+          etapaAtual.responsavel_usuario_id !== usuarioId && (
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center gap-2">
+              <User className="w-4 h-4 text-slate-500 flex-shrink-0" />
+              <span>
+                Esta etapa já foi assumida por{' '}
+                <strong>{etapaAtual.responsavel_usuario_nome || 'outro usuário'}</strong>.
+              </span>
+            </div>
+          )}
+
         {erro && (
           <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-800 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />

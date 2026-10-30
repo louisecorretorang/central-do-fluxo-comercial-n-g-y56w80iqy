@@ -64,6 +64,14 @@ export function ModalConfirmarGanho({
   }, [open, seguradoraIdAtual, valorEstimadoAtual, numeroQuiverAtual])
 
   const handleConfirmar = async () => {
+    // T5.03b — o banco passou a exigir os três campos (regra 7). A tela confere antes para
+    // não devolver erro de servidor: seguradora só é exigida quando realmente está vazia,
+    // para não quebrar o caso em que a abertura já definiu a operadora.
+    if (!seguradoraId) {
+      setErro('Selecione a seguradora/operadora para confirmar o ganho.')
+      return
+    }
+
     const valorNumerico = parseCurrencyToNumber(valorFechadoStr)
     if (valorNumerico <= 0) {
       setErro('Informe o valor fechado da proposta em R$.')
