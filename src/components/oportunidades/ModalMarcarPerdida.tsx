@@ -58,6 +58,12 @@ export function ModalMarcarPerdida({
       return
     }
 
+    // T5.03b — o banco passou a exigir a observação (regra 9).
+    if (!observacao.trim()) {
+      setErro('Descreva o motivo da perda na observação.')
+      return
+    }
+
     setSalvando(true)
     setErro(null)
 
@@ -123,10 +129,10 @@ export function ModalMarcarPerdida({
             </select>
           </div>
 
-          {/* Observação opcional */}
+          {/* Observação obrigatória (T5.03b) */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Observação adicional <span className="text-slate-400 font-normal">(opcional)</span>
+              Observação <span className="text-red-500">*</span>
             </label>
             <Textarea
               placeholder="Descreva detalhes ou ponderações que justifiquem a perda..."
@@ -151,7 +157,7 @@ export function ModalMarcarPerdida({
           <Button
             type="button"
             onClick={handleConfirmar}
-            disabled={salvando || !motivoId}
+            disabled={salvando || !motivoId || !observacao.trim()}
             className="rounded-xl text-xs h-9 bg-rose-600 hover:bg-rose-700 text-white font-semibold btn-press"
           >
             {salvando ? (
