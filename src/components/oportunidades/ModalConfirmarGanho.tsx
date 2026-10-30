@@ -130,72 +130,78 @@ export function ModalConfirmarGanho({
           {/* Seguradora / Operadora */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Seguradora / Operadora <span className="text-red-500">*</span>
+              Seguradora / Operadora fechada
             </label>
             <select
               value={seguradoraId}
               onChange={(e) => setSeguradoraId(e.target.value)}
-              className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:border-teal-500 focus:outline-none"
+              className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-800 focus:border-teal-500 focus:outline-none"
             >
               <option value="">Selecione a seguradora/operadora...</option>
               {seguradoras.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.nome}
+                  {s.nome} ({s.frente})
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Valor fechado */}
+          {/* Valor Fechado */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Valor fechado (R$) <span className="text-red-500">*</span>
+              Valor fechado (R$) <span className="text-red-500 font-bold">*</span>
             </label>
-            <Input
-              value={valorFechadoStr}
-              onChange={(e) => setValorFechadoStr(formatCurrencyBRL(e.target.value))}
-              placeholder="R$ 0,00"
-              className="h-10 rounded-xl text-xs border-slate-200 font-mono"
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-2 text-xs font-semibold text-slate-400">R$</span>
+              <Input
+                type="text"
+                placeholder="0,00"
+                value={valorFechadoStr}
+                onChange={(e) => setValorFechadoStr(e.target.value)}
+                className="h-9 pl-9 text-xs rounded-xl border-slate-200 font-mono"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">Exemplo: 1.250,00 ou 4.800,50</p>
           </div>
 
-          {/* Nº da proposta / Quiver */}
+          {/* Nº da Proposta */}
           <div>
             <label className="text-xs font-semibold text-slate-700 block mb-1">
-              Nº da proposta / Quiver <span className="text-red-500">*</span>
+              Nº da proposta / apólice (Quiver) <span className="text-red-500 font-bold">*</span>
             </label>
             <Input
+              type="text"
+              placeholder="Digite o número da proposta ou apólice..."
               value={numeroProposta}
               onChange={(e) => setNumeroProposta(e.target.value)}
-              placeholder="Ex.: 123456789"
-              className="h-10 rounded-xl text-xs border-slate-200 font-mono"
+              className="h-9 text-xs rounded-xl border-slate-200 font-mono"
             />
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={salvando}
-            className="h-10 px-4 rounded-xl text-xs border-slate-200"
+            className="rounded-xl text-xs h-9"
           >
             Cancelar
           </Button>
           <Button
             type="button"
             onClick={handleConfirmar}
-            disabled={salvando || !seguradoraId || !valorFechadoStr || !numeroProposta.trim()}
-            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold btn-press"
+            disabled={salvando}
+            className="rounded-xl text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold btn-press"
           >
             {salvando ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
-                Confirmando...
+                Salvando fechamento...
               </>
             ) : (
-              'Confirmar ganho'
+              'Confirmar Ganho'
             )}
           </Button>
         </DialogFooter>
