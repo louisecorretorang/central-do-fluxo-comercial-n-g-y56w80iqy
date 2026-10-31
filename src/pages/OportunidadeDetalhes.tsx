@@ -59,10 +59,7 @@ export default function OportunidadeDetalhes() {
       setError(null)
 
       try {
-        const [res, datas] = await Promise.all([
-          getOportunidadeById(id),
-          getDatasFechamento(id),
-        ])
+        const [res, datas] = await Promise.all([getOportunidadeById(id), getDatasFechamento(id)])
         if (res.error || !res.data) {
           throw new Error(res.error || 'Oportunidade não encontrada.')
         }
@@ -384,9 +381,7 @@ export default function OportunidadeDetalhes() {
               {opp.data_perda && (
                 <div>
                   <span className="text-slate-500 font-medium">Perdida em: </span>
-                  <span className="font-bold text-rose-950">
-                    {formatDateBR(opp.data_perda)}
-                  </span>
+                  <span className="font-bold text-rose-950">{formatDateBR(opp.data_perda)}</span>
                 </div>
               )}
               <div>

@@ -218,7 +218,9 @@ export function ChecklistEtapaAtual({
   // T5.02 — a etapa da fila só pode ser assumida enquanto ninguém a assumiu. Depois disso,
   // o banco recusa com "já assumida por …"; a tela mostra de quem é em vez de oferecer o botão.
   const etapaSemDono =
-    etapaAtual && etapaAtual.responsavel_tipo === 'fila_equipe' && !etapaAtual.responsavel_usuario_id
+    etapaAtual &&
+    etapaAtual.responsavel_tipo === 'fila_equipe' &&
+    !etapaAtual.responsavel_usuario_id
 
   const podeAssumir =
     etapaSemDono &&
