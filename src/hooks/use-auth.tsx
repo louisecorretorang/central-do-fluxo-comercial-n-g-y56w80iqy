@@ -36,7 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [equipesIds, setEquipesIds] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
+  const [carregando, setCarregando] = useState(true)
+  // Perfil já foi consultado ao menos uma vez (mesmo que não exista). Sem esta marca,
+  // um usuário sem registro em `profiles` ficaria carregando para sempre.
+  const [perfilConsultado, setPerfilConsultado] = useState(false)
 
   // Função para carregar o perfil do usuário logado e suas equipes
   const loadProfile = useCallback(async (userId: string, userEmail?: string | null) => {
@@ -66,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (resolvedProfile) {
+        setPerfilConsultado(true)
         setProfile(resolvedProfile)
         // Buscar equipes do usuário
         const { data: eqData } = await client
@@ -81,11 +85,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return resolvedProfile
       }
 
+      setPerfilConsultado(true)
       setProfile(null)
       setEquipesIds([])
       return null
     } catch (err) {
       console.error('Erro ao buscar perfil:', err)
+      setPerfilConsultado(true)
       setProfile(null)
       setEquipesIds([])
       return null
@@ -98,6 +104,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, loadProfile])
 
+  // BUG (10/11): `loading` só era verdadeiro no primeiro mount. Na entrada, a sessão chega
+  // antes do perfil e o app já se considerava pronto — com `profile` null, `situacao` cai em
+  // 'inativo' e a rota protegida expulsava o usuário para a tela de login, que mandava de
+  // volta. Eram os ~3 "pisca" relatados. Agora, enquanto houver sessão e faltar perfil,
+  // continuamos em carregamento — que é o estado que a tela inicial e a rota protegida leem.
+  const loading = carregando || Boolean(session && !perfilConsultado)
+
   useEffect(() => {
     // REGRA DE OURO DO SKILL: NENHUM CÓDIGO ASYNC/AWAIT DENTRO DO onAuthStateChange
     const {
@@ -107,11 +120,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(newSession?.user ?? null)
       if (!newSession?.user) {
         setProfile(null)
-        setLoading(false)
+        setCarregando(false)
       } else {
         // Disparar carga de perfil fora da assinatura síncrona
         loadProfile(newSession.user.id, newSession.user.email).finally(() => {
-          setLoading(false)
+          setCarregando(false)
         })
       }
     })
@@ -122,10 +135,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(initialSession?.user ?? null)
       if (initialSession?.user) {
         loadProfile(initialSession.user.id, initialSession.user.email).finally(() => {
-          setLoading(false)
+          setCarregando(false)
         })
       } else {
-        setLoading(false)
+        setCarregando(false)
       }
     })
 
@@ -190,6 +203,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
+    setPerfilConsultado(false)
     setProfile(null)
     setEquipesIds([])
     setUser(null)
