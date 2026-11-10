@@ -62,6 +62,8 @@ export default function Oportunidades() {
   const { openModal } = useOpportunityModal()
 
   const [oportunidades, setOportunidades] = useState<OportunidadeResumo[]>([])
+  // T6.01 — paginação só de exibição. O CSV continua exportando a lista inteira.
+  const [paginaAtual, setPaginaAtual] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -134,6 +136,8 @@ export default function Oportunidades() {
         throw new Error(res.error)
       }
       setOportunidades(res.data || [])
+      // T6.01 — filtro novo sempre começa na primeira página.
+      setPaginaAtual(1)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao buscar oportunidades'
       setError(msg)
@@ -189,6 +193,16 @@ export default function Oportunidades() {
     filtroEquipe !== 'todas' ||
     Boolean(dataInicioBR) ||
     Boolean(dataFimBR)
+
+  // T6.01 — quantas linhas por página e qual fatia está visível.
+  const ITENS_POR_PAGINA = 25
+  const totalPaginas = Math.max(1, Math.ceil(oportunidades.length / ITENS_POR_PAGINA))
+  const paginaSegura = Math.min(paginaAtual, totalPaginas)
+  const inicioPagina = (paginaSegura - 1) * ITENS_POR_PAGINA
+  const oportunidadesDaPagina = oportunidades.slice(
+    inicioPagina,
+    inicioPagina + ITENS_POR_PAGINA,
+  )
 
   // Exportação CSV formatada rigorosamente conforme especificação
   const handleExportCSV = () => {
@@ -562,7 +576,7 @@ export default function Oportunidades() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {oportunidades.map((opp) => (
+                  {oportunidadesDaPagina.map((opp) => (
                     <TableRow key={opp.id} className="hover:bg-slate-50/60 transition-colors">
                       {/* Protocolo */}
                       <TableCell className="pl-6 py-4 font-mono text-xs font-bold text-teal-900">
@@ -675,7 +689,7 @@ export default function Oportunidades() {
 
             {/* Lista em Cartões para Mobile/Tablet */}
             <div className="block lg:hidden divide-y divide-slate-100">
-              {oportunidades.map((opp) => (
+              {oportunidadesDaPagina.map((opp) => (
                 <div key={opp.id} className="p-4 sm:p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -754,6 +768,47 @@ export default function Oportunidades() {
           </>
         )}
       </Card>
+
+      {/* T6.01 — paginação da lista. O CSV ignora esta divisão e exporta tudo. */}
+      {oportunidades.length > ITENS_POR_PAGINA && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <span className="text-xs text-slate-500">
+            Mostrando <strong className="text-slate-700">{inicioPagina + 1}</strong>–
+            <strong className="text-slate-700">
+              {Math.min(inicioPagina + ITENS_POR_PAGINA, oportunidades.length)}
+            </strong>{' '}
+            de <strong className="text-slate-700">{oportunidades.length}</strong> oportunidades
+          </span>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPaginaAtual((p) => Math.max(1, p - 1))}
+              disabled={paginaSegura <= 1}
+              className="h-8 px-3 rounded-xl border-slate-200 text-xs font-semibold"
+            >
+              Anterior
+            </Button>
+
+            <span className="text-xs font-semibold text-slate-600 px-1">
+              Página {paginaSegura} de {totalPaginas}
+            </span>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPaginaAtual((p) => Math.min(totalPaginas, p + 1))}
+              disabled={paginaSegura >= totalPaginas}
+              className="h-8 px-3 rounded-xl border-slate-200 text-xs font-semibold"
+            >
+              Próxima
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
