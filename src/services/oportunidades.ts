@@ -133,12 +133,26 @@ export async function getOportunidades(options?: {
       query = query.lte('created_at', `${options.dataFim}T23:59:59.999Z`)
     }
 
-    const { data, error } = await query
+    // T6.01 — o PostgREST devolve no máximo 1000 linhas por requisição, sem erro nem aviso.
+    // Antes, a lista (e o CSV) ficavam incompletos em silêncio ao passar disso, e a busca
+    // textual — que roda em JS sobre o resultado — também deixava de achar registros legítimos.
+    // Agora percorremos as páginas até o fim antes de filtrar.
+    const PAGINA = 1000
+    const brutos: any[] = []
+    for (let inicio = 0; ; inicio += PAGINA) {
+      const { data: lote, error } = await query.range(inicio, inicio + PAGINA - 1)
 
-    if (error) {
-      console.error('Erro ao buscar oportunidades:', error)
-      return { data: null, error: error.message }
+      if (error) {
+        console.error('Erro ao buscar oportunidades:', error)
+        return { data: null, error: error.message }
+      }
+
+      const linhas = lote || []
+      brutos.push(...linhas)
+      if (linhas.length < PAGINA) break
     }
+
+    const data = brutos
 
     const now = Date.now()
     const msInDay = 1000 * 60 * 60 * 24
